@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="click.dummer.imagesms">
-    
+    xmlns:tools="http://schemas.android.com/tools"
+    package="art.wertfrei.byteSMS">
+
     <uses-feature android:name="android.hardware.camera" android:required="true" />
 
-    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity
-            android:name="click.dummer.imagesms.MainActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+        android:theme="@style/AppTheme"
+        android:name="art.wertfrei.byteSMS.MyApplication"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <activity android:name="art.wertfrei.byteSMS.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -29,15 +34,30 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
             </intent-filter>
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
         </activity>
-        
-        <activity
-            android:name="click.dummer.imagesms.PreferencesActivity"
-            android:parentActivityName="click.dummer.imagesms.MainActivity" />
-            
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="art.wertfrei.byteSMS.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+
+
+        <receiver
+            android:name = "art.wertfrei.byteSMS.BinarySMS">
+            <intent-filter>
+                <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
+                <data
+                    android:scheme="sms"
+                    android:host="*"
+                    android:port="@integer/pdu_data_port" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

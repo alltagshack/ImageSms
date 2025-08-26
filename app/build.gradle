@@ -3,11 +3,12 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "click.dummer.imagesms"
+        applicationId "art.wertfrei.byteSMS"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 20
-        versionName "2.0"
+        versionCode 10
+        versionName "1.0"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -27,4 +28,5 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support.constraint:constraint-layout:2.0.4'
     implementation 'com.android.support:design:28.+'
+    implementation 'androidx.multidex:multidex:2.0.1'
 }

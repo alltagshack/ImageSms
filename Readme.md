@@ -1,33 +1,60 @@
-# Image SMS
+# ByteSMS
 
-Image SMS uses long text SMS to send a very small picture (NOT MMS). It uses
-base64 technique (similar to email attachments) to transfer data. It is
-a bare metal App and Open Source on github. If you
+ByteSMS uses data SMS to send a very small picture (NOT MMS). It uses
+It is a *proof of concept* App and Open Source on github. If you
 want to enlarge the features, you have to do it by your own.
+
+A sms flat rate is a good choice!
+
+## Features
+
+- ask and set permissions (and gives a hint to allow notifications for the app)
+- preview of the shrinked down and compressed cam picture
+  - sliders to change size and compression
+  - calculte how many bytes/sms it will be
+- handles png, webp, gif and jpeg
+- uses "share to" function for image/file access
+- the data sms are hidden in normal sms/mms apps
+- vibrate, LED and sound-notification with preview in the notification
+- works portrait and landscape mode
+
+## Issues
+
+- there is no sent-box to see the sent images
+- maybe the app goes powerdown and sleep and single data sms are dropped
+- user has to resart the app after setting permissions
+- the permission handly only on app-start is a bad choice
+- the received images are not stored on the device
+- because of the small header size, there is a limit of 255 for a file (and this is not checked)
+- I set the limit of stored images to 32
+- the sqlite storage and indexs are ugly. maybe getting datasms from other persons at the same time and it fails.
+- gif is not animated (yet)
+- The hint "20 SMS in 30min per App limit" my break the sending. I am struggling to handle this limit or change it.
+- Because the default datasms api from Android is stupid, I have to
+  make my own small header to each datasms. the theoretical size of 140
+  or 150 bytes is shrinked down to 130!
+- send to yourself: actually this crashes the app (async task issue?)
+- not tested on Android 4.4
 
 ## Permissions
 
-I love my privacy. Thus I love apps with only a couple of permissions. Image SMS only access on:
+I love my privacy. Thus I love apps with only a couple of permissions. ByteSMS access on:
 
 - SMS (read and send)
 - Camera
+- Files
+- Notification
+- Vibrate
 
 Image SMS does not use access to:
 
-- Files
 - Contacts
-- Internet
 
 This may be strange to you, because you need a phone number and there is no contact selection.
 
 ## Get the App
 
-[APK file](https://raw.githubusercontent.com/no-go/ImageSms/master/app/release/click.dummer.imagesms.apk)
-
-## NOT todo: CBC ciphertext stealing
-
-THIS FEATURE MAKES SENSE, IF THE MESSAGE IS REALY LONG (filling random?).
-There will be a small feature in the settings menu to use CBC ciphertext stealing and set initialvector and key.
+...
 
 ## License
 

@@ -1,74 +1,10 @@
-
 <resources>
-    <string name="app_name">imageSMS</string>
-    <string name="read_in">read inbox</string>
-    <string name="read_out">read sent</string>
-    <string name="take_pic">take a picture</string>
-    <string name="settings">Settings</string>
-    <string name="send_to">send to …</string>
-    <string name="display_limit">SMS display limit</string>
-    <string name="sent_hint">Sent</string>
-    <string name="failure_hint">Generic failure</string>
-    <string name="no_service_hint">No service</string>
-    <string name="null_pdu_hint">Null PDU</string>
-    <string name="radio_off_hint">Radio off</string>
-    <string name="sms_delivered_hint">SMS delivered</string>
-    <string name="not_delivered_hint">SMS not delivered</string>
-    <string name="ok_btn">OK</string>
-    <string name="cancel_btn">Cancel</string>
+    <string name="app_name">Byte SMS</string>
+    <string name="send_done">sms done</string>
+    <string name="send_error">ERROR on send!</string>
+    <string name="restart_me">Permission update! RESTART ME!</string>
     <string name="date_format">yyyy-MM-dd HH:mm</string>
-    <string name="problem_image">There is a problem with that image data.</string>
-    <string name="send_in_x_msg">Send picture with %s messages to:</string>
-    <string name="img_up">+ bigger</string>
-    <string name="img_down">- smaller</string>
-    <string name="freshup">Fresh up!</string>
-    <string name="quality">Quality</string>
-    <string name="quality_summary">Better quality results in longer (more) SMS.</string>
-    <string name="website">Visit website</string>
-    <string name="scale">Image scale</string>
-    <string name="prefgif">Gif and not WEBP</string>
-    <string name="scale_summary">Smaller image scale results in less SMS.</string>
-    <string name="add_some_text_here">optional additional sms text...</string>
-
-    <string-array name="scale_names">
-        <item>tenth</item>
-        <item>1/4</item>
-        <item>1/3</item>
-        <item>half</item>
-        <item>3/4</item>
-        <item>full</item>
-    </string-array>
-
-    <string-array name="scale_values">
-        <item>10</item>
-        <item>25</item>
-        <item>33</item>
-        <item>50</item>
-        <item>75</item>
-        <item>100</item>
-    </string-array>
-
-    <string-array name="quality_names">
-        <item>10% strange</item>
-        <item>20% terrible</item>
-        <item>30% ugly</item>
-        <item>50% default</item>
-        <item>60% ok</item>
-        <item>75% good</item>
-        <item>85% fine</item>
-        <item>90% best</item>
-    </string-array>
-
-    <string-array name="quality_values">
-        <item>10</item>
-        <item>20</item>
-        <item>30</item>
-        <item>50</item>
-        <item>60</item>
-        <item>75</item>
-        <item>85</item>
-        <item>90</item>
-    </string-array>
-
+    <string name="last_tel">+49157</string>
+    <string name="take_pic">Take picture</string>
+    <string name="wait">Please wait</string>
 </resources>
-
