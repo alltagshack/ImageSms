@@ -17,6 +17,7 @@ A sms flat rate is a good choice!
 - the data sms are hidden in normal sms/mms apps
 - vibrate, LED and sound-notification with preview in the notification
 - works portrait and landscape mode
+- checks the limit of 256 messages for each image
 
 ## Issues
 
@@ -24,15 +25,13 @@ A sms flat rate is a good choice!
 - maybe the app goes powerdown and sleep and single data sms are dropped
 - user has to resart the app after setting permissions
 - the permission handly only on app-start is a bad choice
-- the received images are not stored on the device
-- because of the small header size, there is a limit of 255 for a file (and this is not checked)
-- I set the limit of stored images to 32
-- the sqlite storage and indexs are ugly. maybe getting datasms from other persons at the same time and it fails.
+- the received images are not stored as file on the device
+- I set the limit of stored images to 32 for each sending tel no. (address)
+- the sqlite storage and indices are ugly.
 - gif is not animated (yet)
 - The hint "20 SMS in 30min per App limit" my break the sending. I am struggling to handle this limit or change it.
 - Because the default datasms api from Android is stupid, I have to
-  make my own small header to each datasms. the theoretical size of 140
-  or 150 bytes is shrinked down to 130!
+  make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
 - send to yourself: actually this crashes the app (async task issue?)
 - not tested on Android 4.4
 
@@ -46,7 +45,7 @@ I love my privacy. Thus I love apps with only a couple of permissions. ByteSMS a
 - Notification
 - Vibrate
 
-Image SMS does not use access to:
+ByteSMS does not use access to:
 
 - Contacts
 

@@ -30,11 +30,20 @@ public class BinarySMS extends BroadcastReceiver {
     // 128 - id - numer - total = 125
     public static final int SEGMENT_SIZE = 130;
 
+    private static BinarySMS instance;
+
+    public static BinarySMS getInstance() {
+        if (instance == null) {
+            instance = new BinarySMS();
+        }
+        return instance;
+    }
+
     public boolean sendSms(Context context, byte[] bytes, MimeCode mime, String phoneNumber, ProgressCallback callback)
     {
         MyApplication myApp = (MyApplication) context.getApplicationContext();
         // +1 for mime byte in first sms
-        byte totalSegments = (byte) Math.ceil((double) (bytes.length+1) / SEGMENT_SIZE);
+        int totalSegments = (int) Math.ceil((double) (bytes.length+1) / SEGMENT_SIZE);
 
         if (PermissionUtils.writeGranted(context)) {
             short pduDataPort = (short) context.getResources().getInteger(R.integer.pdu_data_port);
@@ -44,8 +53,8 @@ public class BinarySMS extends BroadcastReceiver {
                 int length = Math.min(SEGMENT_SIZE, bytes.length - start);
                 byte[] segment = new byte[length+3];
                 segment[0] = (byte) (MESSAGE_START_REF + myApp.getRef());
-                segment[1] = (byte) (i+1);
-                segment[2] = totalSegments;
+                segment[1] = (byte) i;
+                segment[2] = (byte) totalSegments;
                 if (i == 0) {
                     segment[3] = mime.getCode();
                     System.arraycopy(bytes, start, segment, 4, length-1);
@@ -56,7 +65,7 @@ public class BinarySMS extends BroadcastReceiver {
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendDataMessage(phoneNumber, null, pduDataPort, segment, null, null);
 
-                Log.d(context.getString(R.string.app_name), "pdu " + (i+1) + ": " + MyApplication.bytesToHex(segment));
+                Log.d(context.getString(R.string.app_name), "data " + i + ": " + MyApplication.bytesToHex(segment));
 
                 try {
                     if (i%10 == 9) {
@@ -94,24 +103,24 @@ public class BinarySMS extends BroadcastReceiver {
             String address = "";
             int totalParts = 0;
             Message m = null;
-            for (Object pdu : pdus)
-            {
-                SmsMessage message = SmsMessage.createFromPdu((byte[]) pdu);
+            //for (Object pdu : pdus)
+            //{
+                SmsMessage message = SmsMessage.createFromPdu((byte[]) pdus[0]);
                 byte[] data = message.getUserData();
                 address = message.getDisplayOriginatingAddress();
 
                 Log.d(context.getString(R.string.app_name), "UserData: " + MyApplication.bytesToHex(data));
 
                 byte refNum = data[0];
-                byte seqNum = data[1];
-                totalParts = data[2];
+                int seqNum = data[1] & 0xFF;
+                totalParts = data[2] & 0xFF;
 
-                Log.d(context.getString(R.string.app_name), "Ref[" + refNum + "], Part[" + seqNum + "/" + totalParts + "]");
+                Log.d(context.getString(R.string.app_name), "Ref[" + refNum + "], Part[" + (seqNum + 1) + "/" + totalParts + "]");
 
 
                 int payloadStart = 3;
                 MimeCode mime = MimeCode.NO;
-                if (seqNum == 1) {
+                if (seqNum == 0) {
                     mime = MimeCode.fromByte(data[3]);
                     payloadStart = 4;
                 }
@@ -120,15 +129,15 @@ public class BinarySMS extends BroadcastReceiver {
                 byte[] payload = new byte[payloadLength];
                 System.arraycopy(data, payloadStart, payload, 0, payloadLength);
 
-                myApp.updateMessage(refNum, seqNum, mime, address, payload);
+                myApp.updateMessage(refNum, address, seqNum, mime, payload);
 
                 // try to join the data: ----------------------------------------
 
-                if (myApp.countParts(refNum) == totalParts && totalParts > 0) {
+                if (myApp.countParts(refNum, address) == totalParts && totalParts > 0) {
                     Date date = new Date();
-                    myApp.messageReceived(refNum, date);
+                    myApp.messageReceived(refNum, address, date);
 
-                    m = myApp.getMessage(refNum);
+                    m = myApp.getMessage(refNum, address);
                     byte[] fullMessage = null;
                     if (m != null) {
                         fullMessage = m.getDaten();
@@ -149,9 +158,9 @@ public class BinarySMS extends BroadcastReceiver {
 
 
                 } else {
-                    Log.w(context.getString(R.string.app_name),"Incomplete message received. Expected parts: " + totalParts + ", got: " + myApp.countParts(refNum));
+                    Log.w(context.getString(R.string.app_name),"Incomplete message received. Expected parts: " + totalParts + ", got: " + myApp.countParts(refNum, address));
                 }
-            }
+            //}
             return null;
         }
     }

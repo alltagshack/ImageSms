@@ -48,7 +48,6 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     public static boolean isActive = false;
-    private BinarySMS binarySms;
 
     private static final int MESSAGE_PADDING = 20;
 
@@ -59,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText telEdit;
     private SeekBar sbCompression;
     private SeekBar sbSize;
+    private Button sendButton;
 
     private byte[] shareBytes;
     private MimeCode shareMime;
@@ -82,9 +82,7 @@ public class MainActivity extends AppCompatActivity {
 
         handleIntent(getIntent());
 
-        binarySms = new BinarySMS();
-
-        Button sendButton = findViewById(R.id.button);
+        sendButton = findViewById(R.id.button);
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -181,6 +179,8 @@ public class MainActivity extends AppCompatActivity {
         MyApplication myApp = (MyApplication) this.getApplicationContext();
 
         Bitmap compressedBitmap = BitmapFactory.decodeByteArray(shareBytes, 0, shareBytes.length);
+        // +1 for mime byte in first sms
+        int countSms = (int) Math.ceil((double) (shareBytes.length +1) / BinarySMS.SEGMENT_SIZE);
 
         sendImageView.setVisibility(View.VISIBLE);
         fileDetails.setVisibility(View.VISIBLE);
@@ -192,14 +192,20 @@ public class MainActivity extends AppCompatActivity {
             sbCompression.setVisibility(View.VISIBLE);
         }
 
+        if (countSms > 255) {
+            sendButton.setEnabled(false);
+        } else {
+            sendButton.setEnabled(true);
+        }
+
         sendImageView.setImageBitmap(compressedBitmap);
-        // +1 for mime byte in first sms
+
         fileDetails.setText(
                 "mime: " + shareMime.toString() + "\n" +
                 "bytes: " +
                         String.valueOf(shareBytes.length) +
                         " (" +
-                        String.valueOf((int) Math.ceil((double) (shareBytes.length +1) / BinarySMS.SEGMENT_SIZE)) +
+                        String.valueOf(countSms) +
                         " SMS)");
     }
 
@@ -231,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
             String phoneNumber = telEdit.getText().toString();
             myApp.setTel(phoneNumber);
 
-            return binarySms.sendSms(myApp, shareBytes, shareMime, phoneNumber, new ProgressCallback() {
+            return BinarySMS.getInstance().sendSms(myApp, shareBytes, shareMime, phoneNumber, new ProgressCallback() {
                 @Override
                 public void onProgressUpdate(int progress) {
                     publishProgress(progress);
@@ -274,27 +280,27 @@ public class MainActivity extends AppCompatActivity {
         messageCount = 0;
 
         if (cursor != null && cursor.moveToFirst()) {
-            Map<Byte, Message> messages = new LinkedHashMap<>();
+            Map<String, Message> messages = new LinkedHashMap<>();
 
             do {
                 byte refNum = (byte) cursor.getShort(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_REF_NUM));
                 byte[] data = cursor.getBlob(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_DATEN));
+                String adresse = cursor.getString(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_ADRESSE));
 
-                Message m = messages.get(refNum);
+                Message m = messages.get(String.valueOf(refNum) + "_" + adresse);
                 if (m == null) {
                     // cursor is set to the first seq of data -> it has the mime!
-                    m = new Message(refNum);
-                    m.adresse = cursor.getString(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_ADRESSE));
+                    m = new Message(refNum, adresse);
                     m.date = new Date(cursor.getLong(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_DATUM)));
                     m.mime = MimeCode.fromByte((byte) cursor.getInt(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_MIME)));
-                    messages.put(refNum, m);
+                    messages.put(String.valueOf(refNum) + "_" + adresse, m);
                 }
                 m.addBlob(data);
 
             } while (cursor.moveToNext());
             cursor.close();
 
-            for (Map.Entry<Byte, Message> entry : messages.entrySet()) {
+            for (Map.Entry<String, Message> entry : messages.entrySet()) {
                 Message m = entry.getValue();
                 messageCount++;
                 showMessage(
@@ -551,6 +557,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         isActive = true;
         IntentFilter filter = new IntentFilter("android.intent.action.DATA_SMS_RECEIVED");
+        BinarySMS binarySms = BinarySMS.getInstance();
         registerReceiver(binarySms, filter);
     }
 
@@ -558,7 +565,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         isActive = false;
-        unregisterReceiver(binarySms);
+        unregisterReceiver(BinarySMS.getInstance());
     }
 
     @Override

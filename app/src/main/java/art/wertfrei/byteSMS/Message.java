@@ -12,8 +12,9 @@ public class Message {
 
     private List<byte[]> blobs;
 
-    public Message(byte refNum) {
+    public Message(byte refNum, String adresse) {
         this.refNum = refNum;
+        this.adresse = adresse;
         this.mime = MimeCode.NO;
         this.blobs = new ArrayList<>();
     }

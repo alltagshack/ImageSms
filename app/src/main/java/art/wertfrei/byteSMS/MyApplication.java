@@ -1,6 +1,7 @@
 package art.wertfrei.byteSMS;
 
 import android.app.Application;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Environment;
@@ -38,8 +39,8 @@ public class MyApplication extends Application {
         }
     }
 
-    public Message getMessage(byte refNum) {
-        Cursor cursor = dbManager.get(refNum);
+    public Message getMessage(byte refNum, String adresse) {
+        Cursor cursor = dbManager.get(refNum, adresse);
         Message m = null;
 
         if (cursor != null && cursor.moveToFirst()) {
@@ -48,7 +49,7 @@ public class MyApplication extends Application {
 
                 if (m == null) {
                     // cursor is set to the first seq of data -> it has the mime!
-                    m = new Message(refNum);
+                    m = new Message(refNum, adresse);
                     m.adresse = cursor.getString(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_ADRESSE));
                     m.date = new Date(cursor.getLong(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_DATUM)));
                     m.mime = MimeCode.fromByte((byte) cursor.getInt(cursor.getColumnIndex(MyDatabaseHelper.COLUMN_MIME)));
@@ -65,16 +66,16 @@ public class MyApplication extends Application {
         return dbManager.getAll();
     }
 
-    public void messageReceived(byte refNum, Date date) {
-        dbManager.unfreshSeq(refNum, date.getTime());
+    public void messageReceived(byte refNum, String adresse, Date date) {
+        dbManager.unfreshSeq(refNum, adresse, date.getTime());
     }
 
-    public void updateMessage(byte refNum, byte seqNum, MimeCode mime, String adresse, byte[] data) {
-        dbManager.insert(refNum, seqNum, mime, adresse, 0, data);
+    public void updateMessage(byte refNum, String adresse, int seqNum, MimeCode mime, byte[] data) {
+        dbManager.insert(refNum, adresse, seqNum, mime, 0, data);
     }
 
-    public int countParts(byte refNum) {
-        return dbManager.countFreshSeq(refNum);
+    public int countParts(byte refNum, String adresse) {
+        return dbManager.countFreshSeq(refNum, adresse);
     }
 
     public static String bytesToHex(byte[] bytes) {
