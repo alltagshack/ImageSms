@@ -556,16 +556,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         isActive = true;
-        IntentFilter filter = new IntentFilter("android.intent.action.DATA_SMS_RECEIVED");
-        BinarySMS binarySms = BinarySMS.getInstance();
-        registerReceiver(binarySms, filter);
+        //registerReceiver(BinarySMS.getInstance(), new IntentFilter("android.intent.action.DATA_SMS_RECEIVED"));
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         isActive = false;
-        unregisterReceiver(BinarySMS.getInstance());
+        //unregisterReceiver(BinarySMS.getInstance());
     }
 
     @Override

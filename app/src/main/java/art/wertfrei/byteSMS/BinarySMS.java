@@ -94,7 +94,7 @@ public class BinarySMS extends BroadcastReceiver {
         private final Context context;
 
         HandleDataSms(Context context) {
-            this.context = context.getApplicationContext();
+            this.context = context;
         }
 
         @Override
@@ -153,7 +153,7 @@ public class BinarySMS extends BroadcastReceiver {
                         //mainActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         context.startActivity(mainActivityIntent);
                     } else {
-                        createNotification(context, refNum, address, fullMessage);
+                        createNotification(context, m);
                     }
 
 
@@ -176,11 +176,12 @@ public class BinarySMS extends BroadcastReceiver {
         Object[] pdus = (Object[]) bundle.get("pdus");
         if (pdus == null) return;
 
-        new HandleDataSms(context).execute(pdus);
+        new HandleDataSms(context.getApplicationContext()).execute(pdus);
     }
 
-    private static void createNotification(Context context, byte refNum, String text, byte[] bytes) {
+    private static void createNotification(Context context, Message message) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        byte[] bytes = message.getDaten();
 
         Bitmap iconBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
         iconBitmap = Bitmap.createScaledBitmap(iconBitmap, 64, 64, false);
@@ -202,8 +203,8 @@ public class BinarySMS extends BroadcastReceiver {
         //int lightColor = ContextCompat.getColor(context, R.color.colorPrimary);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, context.getPackageName())
                 .setContentTitle(context.getString(R.string.app_name))
-                .setContentText(text)
-                .setTicker(text)
+                .setContentText(message.adresse)
+                .setTicker(message.adresse)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setLargeIcon(iconBitmap)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -213,6 +214,6 @@ public class BinarySMS extends BroadcastReceiver {
                 .setContentIntent(PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT))
                 .setAutoCancel(true);
 
-        notificationManager.notify(refNum, builder.build());
+        notificationManager.notify(message.refNum, builder.build());
     }
 }

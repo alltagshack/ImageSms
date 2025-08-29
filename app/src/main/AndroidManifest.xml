@@ -48,6 +48,8 @@
 
 
         <receiver
+            android:permission="android.permission.BROADCAST_SMS"
+            android:exported="true"
             android:name = "art.wertfrei.byteSMS.BinarySMS">
             <intent-filter>
                 <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
