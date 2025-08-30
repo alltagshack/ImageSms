@@ -18,6 +18,7 @@ A sms flat rate is a good choice!
 - vibrate, LED and sound-notification with preview in the notification
 - works portrait and landscape mode
 - checks the limit of 256 messages for each image
+- gif is animated
 
 ## Issues
 
@@ -28,7 +29,6 @@ A sms flat rate is a good choice!
 - the received images are not stored as file on the device
 - I set the limit of stored images to 32 for each sending tel no. (address)
 - the sqlite storage and indices are ugly.
-- gif is not animated (yet)
 - The hint "20 SMS in 30min per App limit" my break the sending. I am struggling to handle this limit or change it.
 - Because the default datasms api from Android is stupid, I have to
   make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
