@@ -29,7 +29,6 @@ import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,6 +37,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +45,9 @@ import java.io.InputStream;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.GifImageView;
 
 public class MainActivity extends AppCompatActivity {
     public static boolean isActive = false;
@@ -66,12 +69,8 @@ public class MainActivity extends AppCompatActivity {
     private int messageCount;
     private Bitmap capturedImage;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState)
+    private void initViews()
     {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
         listLayout = findViewById(R.id.listLayout);
         numberLine = findViewById(R.id.numberLine);
         sendImageView = findViewById(R.id.imageView);
@@ -79,16 +78,23 @@ public class MainActivity extends AppCompatActivity {
         telEdit = findViewById(R.id.telEdit);
         sbCompression = findViewById(R.id.sbCompression);
         sbSize = findViewById(R.id.sbSize);
-
-        handleIntent(getIntent());
-
         sendButton = findViewById(R.id.button);
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initViews();
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 new MyAsyncSend(MainActivity.this).execute();
             }
         });
+        handleIntent(getIntent());
 
         sbCompression.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -154,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
             if (imageUri != null) {
 
                 try {
-                    sendImageView.setImageURI(imageUri);
+                    //sendImageView.setImageURI(imageUri);
 
                     InputStream inputStream = getContentResolver().openInputStream(imageUri);
                     ContentResolver contentResolver = getContentResolver();
@@ -182,6 +188,8 @@ public class MainActivity extends AppCompatActivity {
         // +1 for mime byte in first sms
         int countSms = (int) Math.ceil((double) (shareBytes.length +1) / BinarySMS.SEGMENT_SIZE);
 
+        initViews();
+
         sendImageView.setVisibility(View.VISIBLE);
         fileDetails.setVisibility(View.VISIBLE);
         numberLine.setVisibility(View.VISIBLE);
@@ -198,7 +206,19 @@ public class MainActivity extends AppCompatActivity {
             sendButton.setEnabled(true);
         }
 
-        sendImageView.setImageBitmap(compressedBitmap);
+        if (shareMime == MimeCode.GIF) {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(shareBytes);
+            try {
+                GifDrawable gifDrawable = new GifDrawable(inputStream);
+                sendImageView.setImageDrawable(gifDrawable);
+            } catch (IOException e) {
+                // todo
+                e.printStackTrace();
+                return;
+            }
+        } else {
+            sendImageView.setImageBitmap(compressedBitmap);
+        }
 
         fileDetails.setText(
                 "mime: " + shareMime.toString() + "\n" +
@@ -343,10 +363,24 @@ public class MainActivity extends AppCompatActivity {
         textView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
 
         Bitmap bitmap = BitmapFactory.decodeByteArray(fullMessage, 0, fullMessage.length);
-        ImageView imageView =null;
+        ImageView imageView = null;
         if (bitmap != null) {
-            imageView = new ImageView(this);
-            imageView.setImageBitmap(bitmap);
+
+            if (mime == MimeCode.GIF) {
+                imageView = new GifImageView(this);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(fullMessage);
+                try {
+                    GifDrawable gifDrawable = new GifDrawable(inputStream);
+                    imageView.setImageDrawable(gifDrawable);
+                } catch (IOException e) {
+                    // todo
+                    e.printStackTrace();
+                    return;
+                }
+            } else {
+                imageView = new ImageView(this);
+                imageView.setImageBitmap(bitmap);
+            }
             LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -556,14 +590,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         isActive = true;
-        //registerReceiver(BinarySMS.getInstance(), new IntentFilter("android.intent.action.DATA_SMS_RECEIVED"));
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         isActive = false;
-        //unregisterReceiver(BinarySMS.getInstance());
     }
 
     @Override
