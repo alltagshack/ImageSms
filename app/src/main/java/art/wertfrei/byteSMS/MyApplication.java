@@ -1,7 +1,6 @@
 package art.wertfrei.byteSMS;
 
 import android.app.Application;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Environment;
@@ -17,6 +16,12 @@ public class MyApplication extends Application {
     public static final int IMAGE_CAPTURE_REQ = 0x4711;
 
     private DatabaseManager dbManager;
+
+    private final MessageCache broadcastCache = new MessageCache();
+
+    public MessageCache getBroadcastCache() {
+        return broadcastCache;
+    }
 
     @Override
     public void onCreate() {

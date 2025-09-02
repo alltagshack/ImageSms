@@ -15,7 +15,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
@@ -107,7 +106,7 @@ public class BinarySMS extends BroadcastReceiver {
             //{
                 SmsMessage message = SmsMessage.createFromPdu((byte[]) pdus[0]);
                 byte[] data = message.getUserData();
-                address = message.getDisplayOriginatingAddress();
+                address = message.getOriginatingAddress();
 
                 Log.d(context.getString(R.string.app_name), "UserData: " + MyApplication.bytesToHex(data));
 
@@ -134,7 +133,7 @@ public class BinarySMS extends BroadcastReceiver {
                 // try to join the data: ----------------------------------------
 
                 if (myApp.countParts(refNum, address) == totalParts && totalParts > 0) {
-                    Date date = new Date();
+                    Date date = new Date(message.getTimestampMillis());
                     myApp.messageReceived(refNum, address, date);
 
                     m = myApp.getMessage(refNum, address);
@@ -175,6 +174,12 @@ public class BinarySMS extends BroadcastReceiver {
 
         Object[] pdus = (Object[]) bundle.get("pdus");
         if (pdus == null) return;
+
+        MyApplication app = (MyApplication) context.getApplicationContext();
+        MessageCache cache = app.getBroadcastCache();
+        SmsMessage message = SmsMessage.createFromPdu((byte[]) pdus[0]);
+
+        if (cache.isDuplicate(message)) return;
 
         new HandleDataSms(context.getApplicationContext()).execute(pdus);
     }
