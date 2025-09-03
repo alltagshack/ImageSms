@@ -10,17 +10,20 @@ A sms flat rate is a good choice!
 
 - ask and set permissions (and gives a hint to allow notifications for the app)
 - preview of the shrinked down and compressed cam picture
-  - sliders to change size and compression
+  - **sliders to change size and compression**
   - calculte how many bytes/sms it will be
-- handles png, webp, gif and jpeg
-- uses "share to" function for image/file access
-- the data sms are hidden in normal sms/mms apps
+- handles **txt**, png, webp, gif and jpeg
+- uses "share to" function for image or text file access
+- the data sms are **hidden in normal sms/mms apps**
 - vibrate, LED and sound-notification with preview in the notification
-- works portrait and landscape mode
+- cam works portrait and landscape mode
 - checks the limit of 256 messages for each image
-- gif is animated
-- the received file is stored as file on the device
-- sent txt files are supported
+- **gif is animated**
+- the received data is **stored as file** on the device
+
+## Download APK
+
+It is a debug APK, and the code is in alpha state: [file](https://raw.githubusercontent.com/no-go/ImageSms/bytesms/app/build/outputs/apk/debug/art.wertfrei.byteSMS.apk)
 
 ## Screenshots
 
@@ -62,10 +65,6 @@ ByteSMS does not use access to:
 - Contacts
 
 This may be strange to you, because you need a phone number and there is no contact selection.
-
-## Get the App (debug, alpha state!)
-
-[APK file](https://raw.githubusercontent.com/no-go/ImageSms/bytesms/app/build/outputs/apk/debug/art.wertfrei.byteSMS.apk)
 
 ## License
 
