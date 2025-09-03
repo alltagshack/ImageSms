@@ -25,7 +25,7 @@ A sms flat rate is a good choice!
 
 ## Download APK
 
-It is a debug APK, and the code is in alpha state: [file](https://raw.githubusercontent.com/no-go/ImageSms/bytesms/app/build/outputs/apk/debug/art.wertfrei.byteSMS.apk)
+Version 3.x code is in alpha state: get it from [Releases](https://github.com/no-go/ImageSms/releases)
 
 ## Screenshots
 
