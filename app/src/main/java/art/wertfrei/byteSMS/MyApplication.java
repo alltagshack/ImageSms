@@ -7,6 +7,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Date;
 
 
@@ -16,12 +17,6 @@ public class MyApplication extends Application {
     public static final int IMAGE_CAPTURE_REQ = 0x4711;
 
     private DatabaseManager dbManager;
-
-    private final MessageCache broadcastCache = new MessageCache();
-
-    public MessageCache getBroadcastCache() {
-        return broadcastCache;
-    }
 
     @Override
     public void onCreate() {
@@ -127,6 +122,27 @@ public class MyApplication extends Application {
         return file;
     }
 
+    public void cleanupTmpFiles(String address, byte refNum) {
+        File dir = getAppFolder();
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
+            return;
+        }
+
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        String prefix = address + "_" + String.valueOf(refNum) + "_";
+
+        for (File f : files) {
+            String name = f.getName();
+            // expected: <address>_<refNum>_<partNum>.tmp
+            if (name.endsWith(".tmp") && name.startsWith(prefix)) {
+                f.delete();
+            }
+        }
+    }
 
     public String getTel() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());

@@ -20,6 +20,9 @@ import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Date;
 
 public class BinarySMS extends BroadcastReceiver {
@@ -43,28 +46,34 @@ public class BinarySMS extends BroadcastReceiver {
         MyApplication myApp = (MyApplication) context.getApplicationContext();
         // +1 for mime byte in first sms
         int totalSegments = (int) Math.ceil((double) (bytes.length+1) / SEGMENT_SIZE);
+        int offset = 0;
 
         if (PermissionUtils.writeGranted(context)) {
             short pduDataPort = (short) context.getResources().getInteger(R.integer.pdu_data_port);
 
             for (int i = 0; i < totalSegments; i++) {
-                int start = i * SEGMENT_SIZE;
-                int length = Math.min(SEGMENT_SIZE, bytes.length - start);
-                byte[] segment = new byte[length+3];
+
+                int headerLength = 3; // refNum, seqNum, totalParts
+                if (i == 0) headerLength++; // +1 Byte for Mime
+
+                int payloadLength = Math.min(SEGMENT_SIZE - headerLength, bytes.length - offset);
+                byte[] segment = new byte[headerLength + payloadLength];
+
                 segment[0] = (byte) (MESSAGE_START_REF + myApp.getRef());
                 segment[1] = (byte) i;
                 segment[2] = (byte) totalSegments;
+                int payloadStart = 3;
                 if (i == 0) {
                     segment[3] = mime.getCode();
-                    System.arraycopy(bytes, start, segment, 4, length-1);
-                } else {
-                    System.arraycopy(bytes, start-1, segment, 3, length);
+                    payloadStart = 4;
                 }
+                System.arraycopy(bytes, offset, segment, payloadStart, payloadLength);
 
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendDataMessage(phoneNumber, null, pduDataPort, segment, null, null);
 
                 Log.d(context.getString(R.string.app_name), "data " + i + ": " + MyApplication.bytesToHex(segment));
+                offset += payloadLength;
 
                 try {
                     if (i%10 == 9) {
@@ -89,77 +98,85 @@ public class BinarySMS extends BroadcastReceiver {
     }
 
 
-    private static class HandleDataSms extends AsyncTask<Object, Void, Void> {
-        private final Context context;
 
-        HandleDataSms(Context context) {
+    private static class HandleDataSms extends AsyncTask<Void, Void, Void> {
+        private final Context context;
+        private final SmsMessage message;
+
+        HandleDataSms(Context context, SmsMessage message) {
             this.context = context;
+            this.message = message;
         }
 
         @Override
-        protected Void doInBackground(Object... pdus) {
+        protected Void doInBackground(Void ... voids) {
             MyApplication myApp = (MyApplication) context.getApplicationContext();
             String address = "";
             int totalParts = 0;
             Message m = null;
-            //for (Object pdu : pdus)
-            //{
-                SmsMessage message = SmsMessage.createFromPdu((byte[]) pdus[0]);
-                byte[] data = message.getUserData();
-                address = message.getOriginatingAddress();
 
-                Log.d(context.getString(R.string.app_name), "UserData: " + MyApplication.bytesToHex(data));
+            byte[] data = message.getUserData();
+            address = message.getOriginatingAddress();
 
-                byte refNum = data[0];
-                int seqNum = data[1] & 0xFF;
-                totalParts = data[2] & 0xFF;
+            Log.d(context.getString(R.string.app_name), "UserData: " + MyApplication.bytesToHex(data));
 
-                Log.d(context.getString(R.string.app_name), "Ref[" + refNum + "], Part[" + (seqNum + 1) + "/" + totalParts + "]");
+            byte refNum = data[0];
+            int seqNum = data[1] & 0xFF;
+            totalParts = data[2] & 0xFF;
 
+            Log.d(myApp.getString(R.string.app_name), "Ref[" + refNum + "], Part[" + (seqNum + 1) + "/" + totalParts + "]");
 
-                int payloadStart = 3;
-                MimeCode mime = MimeCode.NO;
-                if (seqNum == 0) {
-                    mime = MimeCode.fromByte(data[3]);
-                    payloadStart = 4;
+            int payloadStart = 3;
+            MimeCode mime = MimeCode.NO;
+            if (seqNum == 0) {
+                mime = MimeCode.fromByte(data[3]);
+                payloadStart = 4;
+            }
+
+            int payloadLength = data.length - payloadStart;
+            byte[] payload = new byte[payloadLength];
+            System.arraycopy(data, payloadStart, payload, 0, payloadLength);
+
+            myApp.updateMessage(refNum, address, seqNum, mime, payload);
+
+            // try to join the data: ----------------------------------------
+
+            if (myApp.countParts(refNum, address) == totalParts && totalParts > 0) {
+                Date date = new Date(message.getTimestampMillis());
+                myApp.messageReceived(refNum, address, date);
+
+                m = myApp.getMessage(refNum, address);
+                byte[] fullMessage = null;
+                if (m != null) {
+                    fullMessage = m.getDaten();
+                    Log.d(myApp.getString(R.string.app_name), "Received full Data SMS (" + fullMessage.length + " bytes).");
+                    myApp.cleanupTmpFiles(address, refNum);
+
+                    String ts = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(m.date);
+                    String filename = ts + "_" + address.replace("+", "00") + "." + m.mime.toString().toLowerCase();
+                    File f = myApp.createAppFile(filename);
+                    try (FileOutputStream fos = new FileOutputStream(f)) {
+                        fos.write(fullMessage);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
-                int payloadLength = data.length - payloadStart;
-                byte[] payload = new byte[payloadLength];
-                System.arraycopy(data, payloadStart, payload, 0, payloadLength);
-
-                myApp.updateMessage(refNum, address, seqNum, mime, payload);
-
-                // try to join the data: ----------------------------------------
-
-                if (myApp.countParts(refNum, address) == totalParts && totalParts > 0) {
-                    Date date = new Date(message.getTimestampMillis());
-                    myApp.messageReceived(refNum, address, date);
-
-                    m = myApp.getMessage(refNum, address);
-                    byte[] fullMessage = null;
-                    if (m != null) {
-                        fullMessage = m.getDaten();
-                        Log.d(context.getString(R.string.app_name), "Received full Data SMS (" + fullMessage.length + " bytes).");
-                    }
-
-                    if (MainActivity.isActive) {
-                        Intent mainActivityIntent = new Intent(context, MainActivity.class);
-                        mainActivityIntent.putExtra("address", address);
-                        mainActivityIntent.putExtra("date", DateFormat.format(context.getString(R.string.date_format), date).toString());
-                        mainActivityIntent.putExtra("byte_data", fullMessage);
-                        mainActivityIntent.putExtra("byte_mime", m.mime.getCode());
-                        //mainActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(mainActivityIntent);
-                    } else {
-                        createNotification(context, m);
-                    }
-
-
+                if (MainActivity.isActive) {
+                    Intent mainActivityIntent = new Intent(context, MainActivity.class);
+                    mainActivityIntent.putExtra("address", address);
+                    mainActivityIntent.putExtra("date", DateFormat.format(myApp.getString(R.string.date_format), date).toString());
+                    mainActivityIntent.putExtra("byte_data", fullMessage);
+                    mainActivityIntent.putExtra("byte_mime", m.mime.getCode());
+                    mainActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(mainActivityIntent);
                 } else {
-                    Log.w(context.getString(R.string.app_name),"Incomplete message received. Expected parts: " + totalParts + ", got: " + myApp.countParts(refNum, address));
+                    createNotification(context, m);
                 }
-            //}
+
+            } else {
+                Log.w(myApp.getString(R.string.app_name), "Incomplete message received. Expected parts: " + totalParts + ", got: " + myApp.countParts(refNum, address));
+            }
             return null;
         }
     }
@@ -172,16 +189,18 @@ public class BinarySMS extends BroadcastReceiver {
         Bundle bundle = intent.getExtras();
         if (bundle == null) return;
 
-        Object[] pdus = (Object[]) bundle.get("pdus");
+        final Object[] pdus = (Object[]) bundle.get("pdus");
         if (pdus == null) return;
 
-        MyApplication app = (MyApplication) context.getApplicationContext();
-        MessageCache cache = app.getBroadcastCache();
+        MyApplication myApp = (MyApplication) context.getApplicationContext();
+
         SmsMessage message = SmsMessage.createFromPdu((byte[]) pdus[0]);
-
-        if (cache.isDuplicate(message)) return;
-
-        new HandleDataSms(context.getApplicationContext()).execute(pdus);
+        byte[] data = message.getUserData();
+        String filename = message.getOriginatingAddress() + "_" + String.valueOf(data[0]) + "_" + String.valueOf(data[1]) + ".tmp";
+        File f = myApp.createAppFile(filename);
+        if (f != null) {
+            new HandleDataSms(context.getApplicationContext(), message).execute();
+        }
     }
 
     private static void createNotification(Context context, Message message) {
@@ -189,7 +208,9 @@ public class BinarySMS extends BroadcastReceiver {
         byte[] bytes = message.getDaten();
 
         Bitmap iconBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        iconBitmap = Bitmap.createScaledBitmap(iconBitmap, 64, 64, false);
+        if (iconBitmap != null) {
+            iconBitmap = Bitmap.createScaledBitmap(iconBitmap, 64, 64, false);
+        }
 
         Intent mainActivityIntent = new Intent(context, MainActivity.class);
         mainActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -211,13 +232,16 @@ public class BinarySMS extends BroadcastReceiver {
                 .setContentText(message.adresse)
                 .setTicker(message.adresse)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setLargeIcon(iconBitmap)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setLights(Color.CYAN, 4000, 1000)
                 .setVibrate(new long[]{2000})
                 .setContentIntent(PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT))
                 .setAutoCancel(true);
+
+        if (iconBitmap != null) {
+            builder.setLargeIcon(iconBitmap);
+        }
 
         notificationManager.notify(message.refNum, builder.build());
     }

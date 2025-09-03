@@ -19,6 +19,8 @@ A sms flat rate is a good choice!
 - works portrait and landscape mode
 - checks the limit of 256 messages for each image
 - gif is animated
+- the received file is stored as file on the device
+- sent txt files are supported
 
 ## Issues
 
@@ -26,13 +28,11 @@ A sms flat rate is a good choice!
 - maybe the app goes powerdown and sleep and single data sms are dropped
 - user has to resart the app after setting permissions
 - the permission handly only on app-start is a bad choice
-- the received images are not stored as file on the device
 - I set the limit of stored images to 32 for each sending tel no. (address)
 - the sqlite storage and indices are ugly.
 - The hint "20 SMS in 30min per App limit" my break the sending. I am struggling to handle this limit or change it.
 - Because the default datasms api from Android is stupid, I have to
   make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
-- send to yourself: actually this crashes the app (async task issue?)
 - not tested on Android 4.4
 
 ## Permissions

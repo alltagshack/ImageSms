@@ -5,7 +5,8 @@ public enum MimeCode {
     JPG((byte) 1),
     GIF((byte) 2),
     PNG((byte) 3),
-    WEBP((byte) 4);
+    WEBP((byte) 4),
+    TXT((byte) 5);
 
     private final byte code;
 
@@ -40,6 +41,8 @@ public enum MimeCode {
                 return MimeCode.GIF;
             case "image/webp":
                 return MimeCode.WEBP;
+            case "text/plain":
+                return MimeCode.TXT;
             default:
                 return MimeCode.NO;
         }

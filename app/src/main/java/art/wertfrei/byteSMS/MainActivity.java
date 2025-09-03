@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -152,19 +153,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleSendIntent(Intent intent, String type)
     {
-        if (type.startsWith("image/"))
+        if (type.startsWith("image/") || type.startsWith("text/"))
         {
             Log.d(getString(R.string.app_name), "mime type: " + type);
 
-            Uri imageUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-            if (imageUri != null) {
+            Uri fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (fileUri != null) {
 
                 try {
-                    //sendImageView.setImageURI(imageUri);
-
-                    InputStream inputStream = getContentResolver().openInputStream(imageUri);
+                    InputStream inputStream = getContentResolver().openInputStream(fileUri);
                     ContentResolver contentResolver = getContentResolver();
-                    String mimeType = contentResolver.getType(imageUri);
+                    String mimeType = contentResolver.getType(fileUri);
                     int fileSize = inputStream.available();
                     shareBytes = new byte[fileSize];
                     shareMime = MimeCode.fromString(mimeType);
@@ -194,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
         fileDetails.setVisibility(View.VISIBLE);
         numberLine.setVisibility(View.VISIBLE);
         telEdit.setText(myApp.getTel());
+        fileDetails.setText("");
 
         if (capturedImage != null) {
             sbSize.setVisibility(View.VISIBLE);
@@ -216,17 +216,38 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
                 return;
             }
+        } else if (shareMime == MimeCode.TXT) {
+
+            fileDetails.append("\"" + previewText(shareBytes, 130) + "\"\n");
+
         } else {
             sendImageView.setImageBitmap(compressedBitmap);
         }
 
-        fileDetails.setText(
+        fileDetails.append(
                 "mime: " + shareMime.toString() + "\n" +
                 "bytes: " +
                         String.valueOf(shareBytes.length) +
                         " (" +
                         String.valueOf(countSms) +
                         " SMS)");
+    }
+
+    public static String previewText(byte[] bytes, int maxChars) {
+        if (bytes == null || bytes.length == 0) return "";
+
+        String text;
+        try {
+            text = new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            text = new String(bytes);
+        }
+
+        if (text.length() <= maxChars) {
+            return text;
+        } else {
+            return text.substring(0, maxChars) + "...";
+        }
     }
 
     private class MyAsyncSend extends AsyncTask<Void, Integer, Boolean> {
@@ -337,6 +358,54 @@ public class MainActivity extends AppCompatActivity {
         TextView textView = new TextView(this);
         textView.setText(dateStr + "\n");
         textView.append(address + "\n");
+
+        Bitmap bitmap = BitmapFactory.decodeByteArray(fullMessage, 0, fullMessage.length);
+        ImageView imageView = null;
+        if (bitmap != null) {
+
+            if (mime == MimeCode.GIF)
+            {
+                imageView = new GifImageView(this);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(fullMessage);
+                try {
+                    GifDrawable gifDrawable = new GifDrawable(inputStream);
+                    imageView.setImageDrawable(gifDrawable);
+                } catch (IOException e) {
+                    // todo
+                    e.printStackTrace();
+                    return;
+                }
+            } else {
+                imageView = new ImageView(this);
+                imageView.setImageBitmap(bitmap);
+            }
+
+            if (imageView != null)
+            {
+                LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+                imageView.setLayoutParams(params2);
+                imageView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                imageView.setAdjustViewBounds(true);
+                if (messageCount % 2 == 0) {
+                    imageView.setBackgroundResource(R.color.halfLine1);
+                } else {
+                    imageView.setBackgroundResource(R.color.halfLine2);
+                }
+                listLayout.addView(imageView);
+            }
+
+        } else {
+            if (mime == MimeCode.TXT)
+            {
+                textView.append("\"" + previewText(fullMessage, 130) + "\"\n");
+
+            }
+        }
+
         textView.append("mime: " + mime.toString() + "\n");
         textView.append(
                 // +1 for mime byte in first sms
@@ -361,42 +430,6 @@ public class MainActivity extends AppCompatActivity {
         );
         textView.setLayoutParams(params);
         textView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
-
-        Bitmap bitmap = BitmapFactory.decodeByteArray(fullMessage, 0, fullMessage.length);
-        ImageView imageView = null;
-        if (bitmap != null) {
-
-            if (mime == MimeCode.GIF) {
-                imageView = new GifImageView(this);
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(fullMessage);
-                try {
-                    GifDrawable gifDrawable = new GifDrawable(inputStream);
-                    imageView.setImageDrawable(gifDrawable);
-                } catch (IOException e) {
-                    // todo
-                    e.printStackTrace();
-                    return;
-                }
-            } else {
-                imageView = new ImageView(this);
-                imageView.setImageBitmap(bitmap);
-            }
-            LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-            imageView.setLayoutParams(params2);
-            imageView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
-            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            imageView.setAdjustViewBounds(true);
-            if (messageCount % 2 == 0) {
-                imageView.setBackgroundResource(R.color.halfLine1);
-            } else {
-                imageView.setBackgroundResource(R.color.halfLine2);
-            }
-            listLayout.addView(imageView);
-
-        }
         listLayout.addView(textView);
     }
 
