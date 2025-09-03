@@ -22,6 +22,18 @@ A sms flat rate is a good choice!
 - the received file is stored as file on the device
 - sent txt files are supported
 
+## Screenshots
+
+For example 
+
+![share or take a photo and compress it](images/01-take-photo-and-compress.jpg)
+
+![share or take a photo and compress it](images/06-see-preview-of-received-image.jpg)
+
+![get animated gif](images/07-received-gif-files-are-animated.gif)
+
+or see folder `images/`.
+
 ## Issues
 
 - there is no sent-box to see the sent images
@@ -51,9 +63,9 @@ ByteSMS does not use access to:
 
 This may be strange to you, because you need a phone number and there is no contact selection.
 
-## Get the App
+## Get the App (debug, alpha state!)
 
-...
+[APK file](https://raw.githubusercontent.com/no-go/ImageSms/bytesms/app/build/outputs/apk/debug/art.wertfrei.byteSMS.apk)
 
 ## License
 
@@ -89,11 +101,13 @@ single person. I DO NOT collect, transmit, store or use any personal information
 
 I DO NOT collect non-personal information like user's behavior:
 
- -  to solve App problems
- -  to show personalized ads
+- to solve App problems
+- to show personalized ads
 
-The Google Play Store collects non-personal information such as the data of install (country and equipment).
-I did not add any Google or ad keys or codes for marketing feedback, Ads or payment systems!
+The Google Play Store collects non-personal information such as the data of install (country and equipment), BUT ...
+
+- I did not add any Google or ad keys or codes for marketing feedback, Ads or a payment system to the app
+- I did not add this App to the Google Play Store!
 
 ### Privacy Questions.
 
