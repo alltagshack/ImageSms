@@ -9,17 +9,19 @@ A sms flat rate is a good choice!
 ## Features
 
 - ask and set permissions (and gives a hint to allow notifications for the app)
-- preview of the shrinked down and compressed cam picture
+- uses "share to" function for file access
+  - handles **txt**, png, webp, gif and jpeg (unknown are send/stored as .bin files)
+  - **gif is animated**
+- preview of the shrinked down and compressed cam picture or jpeg file
+  - cam works portrait and landscape mode
   - **sliders to change size and compression**
   - calculte how many bytes/sms it will be
-- handles **txt**, png, webp, gif and jpeg
-- uses "share to" function for image or text file access
 - the data sms are **hidden in normal sms/mms apps**
 - vibrate, LED and sound-notification with preview in the notification
-- cam works portrait and landscape mode
 - checks the limit of 256 messages for each image
-- **gif is animated**
 - the received data is **stored as file** on the device
+- reads **exif rotation** from jpeg files and rotate it in preview
+- internal: delete old .tmp files
 
 ## Download APK
 

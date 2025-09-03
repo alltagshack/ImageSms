@@ -1,13 +1,20 @@
 package art.wertfrei.byteSMS;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Date;
 
 
@@ -89,6 +96,30 @@ public class MyApplication extends Application {
             hexString.append(hex);
         }
         return hexString.toString().toUpperCase();
+    }
+
+    public File copyUriToTempFile(Uri uri, MimeCode mimeCode) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            if (inputStream == null) return null;
+
+            File tempFile = File.createTempFile("shared", "." + mimeCode.toString().toLowerCase(), getCacheDir());
+            OutputStream outputStream = new FileOutputStream(tempFile);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            inputStream.close();
+            outputStream.close();
+
+            return tempFile;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public File getAppFolder() {

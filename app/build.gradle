@@ -6,8 +6,8 @@ android {
         applicationId "art.wertfrei.byteSMS"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 11
-        versionName "1.1"
+        versionCode 30
+        versionName "3.0"
         multiDexEnabled true
     }
     buildTypes {
@@ -16,7 +16,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             applicationVariants.all { variant ->
                 variant.outputs.all {
-                    outputFileName = "${variant.applicationId}.apk"
+                    def appId = variant.applicationId
+                    def versionName = variant.versionName
+                    def buildType = variant.buildType.name
+
+                    outputFileName = "${appId}-${buildType}-v${versionName}.apk"
                 }
             }
         }

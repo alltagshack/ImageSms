@@ -179,6 +179,18 @@ public class MainActivity extends AppCompatActivity {
                     if (shareMime == MimeCode.JPG) {
                         MyApplication myApp = (MyApplication) this.getApplicationContext();
                         capturedImage = BitmapFactory.decodeByteArray(shareBytes, 0, shareBytes.length);
+
+                        try {
+                            File imageFile = myApp.copyUriToTempFile(fileUri, shareMime);
+                            if (imageFile != null) {
+                                ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+                                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                                capturedImage = rotateImage(capturedImage, orientation);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
                         sbCompression.setProgress(myApp.getCompression()/10);
                         sbSize.setProgress(myApp.getImageSize()/40);
                         scaleCapturedImage();
