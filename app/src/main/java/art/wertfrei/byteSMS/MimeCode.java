@@ -1,7 +1,7 @@
 package art.wertfrei.byteSMS;
 
 public enum MimeCode {
-    NO((byte) 0),
+    BIN((byte) 0),
     JPG((byte) 1),
     GIF((byte) 2),
     PNG((byte) 3),
@@ -29,7 +29,7 @@ public enum MimeCode {
 
     public static MimeCode fromString(String mimeType) {
         if (mimeType == null) {
-            return MimeCode.NO;
+            return MimeCode.BIN;
         }
 
         switch (mimeType) {
@@ -41,10 +41,11 @@ public enum MimeCode {
                 return MimeCode.GIF;
             case "image/webp":
                 return MimeCode.WEBP;
+            case "text/markdown":
             case "text/plain":
                 return MimeCode.TXT;
             default:
-                return MimeCode.NO;
+                return MimeCode.BIN;
         }
     }
 }

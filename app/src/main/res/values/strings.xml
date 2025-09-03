@@ -7,4 +7,5 @@
     <string name="last_tel">+49157</string>
     <string name="take_pic">Take picture</string>
     <string name="wait">Please wait</string>
+    <string name="send_as_binary">(maybe text file, but I sent it as .bin file)</string>
 </resources>

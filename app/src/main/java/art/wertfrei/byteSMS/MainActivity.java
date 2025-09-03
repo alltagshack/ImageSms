@@ -5,7 +5,6 @@ import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -149,11 +148,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         updateInbox();
+
+        MyApplication myApp = (MyApplication) this.getApplicationContext();
+        myApp.cleanupTmpFiles();
     }
 
     private void handleSendIntent(Intent intent, String type)
     {
-        if (type.startsWith("image/") || type.startsWith("text/"))
+        if (type.startsWith("image/") || type.startsWith("text/") || type.startsWith("application/"))
         {
             Log.d(getString(R.string.app_name), "mime type: " + type);
 
@@ -166,9 +168,21 @@ public class MainActivity extends AppCompatActivity {
                     String mimeType = contentResolver.getType(fileUri);
                     int fileSize = inputStream.available();
                     shareBytes = new byte[fileSize];
+
                     shareMime = MimeCode.fromString(mimeType);
+                    if (shareMime == MimeCode.BIN) {
+                        shareMime = MimeCode.fromString(type);
+                    }
                     inputStream.read(shareBytes);
                     inputStream.close();
+
+                    if (shareMime == MimeCode.JPG) {
+                        MyApplication myApp = (MyApplication) this.getApplicationContext();
+                        capturedImage = BitmapFactory.decodeByteArray(shareBytes, 0, shareBytes.length);
+                        sbCompression.setProgress(myApp.getCompression()/10);
+                        sbSize.setProgress(myApp.getImageSize()/40);
+                        scaleCapturedImage();
+                    }
 
                     showShareBytes();
 
@@ -219,6 +233,10 @@ public class MainActivity extends AppCompatActivity {
         } else if (shareMime == MimeCode.TXT) {
 
             fileDetails.append("\"" + previewText(shareBytes, 130) + "\"\n");
+
+        } else if (shareMime == MimeCode.BIN) {
+
+            fileDetails.append(getString(R.string.send_as_binary) + "\n");
 
         } else {
             sendImageView.setImageBitmap(compressedBitmap);
@@ -298,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
                 sbSize.setVisibility(View.GONE);
                 sbCompression.setVisibility(View.GONE);
                 capturedImage = null;
-                shareMime = MimeCode.NO;
+                shareMime = MimeCode.BIN;
             } else {
                 Toast.makeText(context, getString(R.string.send_error), Toast.LENGTH_SHORT).show();
             }
@@ -439,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
             byte[] fullMessage = intent.getByteArrayExtra("byte_data");
             String address = intent.getStringExtra("address");
             String dateStr = intent.getStringExtra("date");
-            MimeCode mime = MimeCode.fromByte(intent.getByteExtra("byte_mime", MimeCode.NO.getCode()));
+            MimeCode mime = MimeCode.fromByte(intent.getByteExtra("byte_mime", MimeCode.BIN.getCode()));
             if (fullMessage != null) {
                 showMessage(dateStr, mime, address, fullMessage);
             }
@@ -481,7 +499,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void dispatchTakePictureIntent() {
         capturedImage = null;
-        shareMime = MimeCode.NO;
+        shareMime = MimeCode.BIN;
         MyApplication myApp = (MyApplication) this.getApplicationContext();
         File image = myApp.createAppFile("_temp.jpg");
 
@@ -604,12 +622,14 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // cleanup
+            /*
             File f = myApp.createAppFile("_temp.jpg");
             try {
                 f.getCanonicalFile().delete();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            */
 
             sbCompression.setProgress(myApp.getCompression()/10);
             sbSize.setProgress(myApp.getImageSize()/40);

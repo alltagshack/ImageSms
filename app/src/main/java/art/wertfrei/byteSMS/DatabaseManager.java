@@ -18,7 +18,7 @@ public class DatabaseManager {
         values.put(MyDatabaseHelper.COLUMN_REF_NUM, refNum);
         values.put(MyDatabaseHelper.COLUMN_SEQ_NUM, seqNum);
         values.put(MyDatabaseHelper.COLUMN_ADRESSE, adresse);
-        if (mime != MimeCode.NO) values.put(MyDatabaseHelper.COLUMN_MIME, mime.getCode());
+        if (mime != MimeCode.BIN) values.put(MyDatabaseHelper.COLUMN_MIME, mime.getCode());
         values.put(MyDatabaseHelper.COLUMN_DATUM, datum);
         if (daten != null) values.put(MyDatabaseHelper.COLUMN_DATEN, daten);
 

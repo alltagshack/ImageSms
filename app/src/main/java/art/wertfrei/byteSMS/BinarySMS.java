@@ -15,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
@@ -127,7 +128,7 @@ public class BinarySMS extends BroadcastReceiver {
             Log.d(myApp.getString(R.string.app_name), "Ref[" + refNum + "], Part[" + (seqNum + 1) + "/" + totalParts + "]");
 
             int payloadStart = 3;
-            MimeCode mime = MimeCode.NO;
+            MimeCode mime = MimeCode.BIN;
             if (seqNum == 0) {
                 mime = MimeCode.fromByte(data[3]);
                 payloadStart = 4;
@@ -150,7 +151,6 @@ public class BinarySMS extends BroadcastReceiver {
                 if (m != null) {
                     fullMessage = m.getDaten();
                     Log.d(myApp.getString(R.string.app_name), "Received full Data SMS (" + fullMessage.length + " bytes).");
-                    myApp.cleanupTmpFiles(address, refNum);
 
                     String ts = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(m.date);
                     String filename = ts + "_" + address.replace("+", "00") + "." + m.mime.toString().toLowerCase();
@@ -226,7 +226,7 @@ public class BinarySMS extends BroadcastReceiver {
             notificationManager.createNotificationChannel(channel);
         }
 
-        //int lightColor = ContextCompat.getColor(context, R.color.colorPrimary);
+        int lightColor = ContextCompat.getColor(context, R.color.colorPrimary);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, context.getPackageName())
                 .setContentTitle(context.getString(R.string.app_name))
                 .setContentText(message.adresse)
@@ -234,7 +234,7 @@ public class BinarySMS extends BroadcastReceiver {
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-                .setLights(Color.CYAN, 4000, 1000)
+                .setLights(lightColor, 4000, 1000)
                 .setVibrate(new long[]{2000})
                 .setContentIntent(PendingIntent.getActivity(context, 0, mainActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT))
                 .setAutoCancel(true);

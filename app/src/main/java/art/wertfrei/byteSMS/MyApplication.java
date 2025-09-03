@@ -15,6 +15,7 @@ public class MyApplication extends Application {
 
     public static final int PERMISSION_REQ = 0x0815;
     public static final int IMAGE_CAPTURE_REQ = 0x4711;
+    public static final int TEMPFILES_MINUTES_LIMIT = 30;
 
     private DatabaseManager dbManager;
 
@@ -122,7 +123,7 @@ public class MyApplication extends Application {
         return file;
     }
 
-    public void cleanupTmpFiles(String address, byte refNum) {
+    public void cleanupTmpFiles() {
         File dir = getAppFolder();
         if (dir == null || !dir.exists() || !dir.isDirectory()) {
             return;
@@ -133,13 +134,16 @@ public class MyApplication extends Application {
             return;
         }
 
-        String prefix = address + "_" + String.valueOf(refNum) + "_";
+        long now = System.currentTimeMillis();
+        long threshold = now - (TEMPFILES_MINUTES_LIMIT * 60 * 1000);
 
         for (File f : files) {
             String name = f.getName();
-            // expected: <address>_<refNum>_<partNum>.tmp
-            if (name.endsWith(".tmp") && name.startsWith(prefix)) {
-                f.delete();
+            if (name.endsWith(".tmp")) {
+                long lastModified = f.lastModified();
+                if (lastModified > 0 && lastModified < threshold) {
+                    f.delete();
+                }
             }
         }
     }

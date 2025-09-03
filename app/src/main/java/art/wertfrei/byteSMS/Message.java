@@ -15,7 +15,7 @@ public class Message {
     public Message(byte refNum, String adresse) {
         this.refNum = refNum;
         this.adresse = adresse;
-        this.mime = MimeCode.NO;
+        this.mime = MimeCode.BIN;
         this.blobs = new ArrayList<>();
     }
 

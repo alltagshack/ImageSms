@@ -34,6 +34,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
                 <data android:mimeType="text/*"/>
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 
