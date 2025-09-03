@@ -5,3 +5,8 @@
 /build
 /app/build/**/*
 .externalNativeBuild
+
+!/app/build/outputs/
+!/app/build/outputs/apk/
+!/app/build/outputs/apk/debug/
+!/app/build/outputs/apk/debug/**
