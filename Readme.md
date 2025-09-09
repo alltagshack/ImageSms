@@ -8,22 +8,24 @@ A sms flat rate is a good choice!
 
 ## Features
 
-- ask and set permissions (and gives a hint to allow notifications for the app)
-- uses "share to" function for file access
-  - handles **txt**, png, webp, gif and jpeg (unknown are send/stored as .bin files)
-  - **gif is animated**
-- preview of the shrinked down and compressed cam picture or jpeg file
+- share **cam picture**
+  - preview of the shrinked down and compressed jpeg file
   - cam works portrait and landscape mode
   - **sliders to change size and compression**
   - calculte how many bytes/sms it will be
-- share location
+- share **location**
   - there is a location button next to the cam button. It tries for 5s to get GPS location.
   - sends GEO position in a single sms
   - a long press on a reveived GEO mime message opens the position in a map application
+- share an **UTF-8 text**
+- uses "share to" for file access
+  - handles **txt**, png, webp, gif and jpeg (unknown are send/stored as .bin files)
+  - **gif is animated**
+- the received data is **stored as file** on the device
 - the data sms are **hidden in normal sms/mms apps**
 - vibrate, LED and sound-notification with preview in the notification
 - checks the limit of 256 messages for each image
-- the received data is **stored as file** on the device
+- ask and set permissions (and gives a hint to allow notifications for the app)
 - reads **exif rotation** from jpeg files and rotate it in preview
 - internal: delete old .tmp files
 

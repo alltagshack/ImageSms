@@ -5,10 +5,15 @@
         android:id="@+id/action_button_location"
         android:icon="@android:drawable/ic_menu_mylocation"
         android:title="@string/get_loc"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_button_text"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:title="@string/utf8_text"
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_button"
         android:icon="@android:drawable/ic_menu_camera"
         android:title="@string/take_pic"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 </menu>

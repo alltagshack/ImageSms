@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -55,7 +56,7 @@ import java.util.Map;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements InputDialogFragment.InputDialogListener {
     public static boolean isActive = false;
 
     private static final int MESSAGE_PADDING = 20;
@@ -249,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (shareMime == MimeCode.TXT) {
 
-            fileDetails.append("\"" + previewText(shareBytes, 130) + "\"\n");
+            fileDetails.append(previewText(shareBytes, 2 * BinarySMS.SEGMENT_SIZE) + "\n");
 
         } else if (shareMime == MimeCode.BIN) {
 
@@ -292,6 +293,14 @@ public class MainActivity extends AppCompatActivity {
         } else {
             return text.substring(0, maxChars) + "...";
         }
+    }
+
+    @Override
+    public void onInputDialogResult(String input) {
+        shareMime = MimeCode.TXT;
+        capturedImage = null;
+        shareBytes = input.getBytes();
+        showShareBytes(0.0, 0.0);
     }
 
     private class MyAsyncSend extends AsyncTask<Void, Integer, Boolean> {
@@ -412,7 +421,6 @@ public class MainActivity extends AppCompatActivity {
                     GifDrawable gifDrawable = new GifDrawable(inputStream);
                     imageView.setImageDrawable(gifDrawable);
                 } catch (IOException e) {
-                    // todo
                     e.printStackTrace();
                     return;
                 }
@@ -441,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             if (mime == MimeCode.TXT)
             {
-                textView.append("\"" + previewText(fullMessage, 130) + "\"\n");
+                textView.append(previewText(fullMessage, 2 * BinarySMS.SEGMENT_SIZE) + "\n");
             }
             else if (mime == MimeCode.GEO)
             {
@@ -475,7 +483,7 @@ public class MainActivity extends AppCompatActivity {
                         " (" +
                         String.valueOf((int) Math.ceil((double) (fullMessage.length + 1) / BinarySMS.SEGMENT_SIZE)) +
                         " SMS)\n\n");
-
+        textView.setTypeface(Typeface.MONOSPACE);
         textView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         textView.setGravity(Gravity.TOP);
         textView.setTextColor(Color.BLACK);
@@ -791,6 +799,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.action_button:
                 dispatchTakePictureIntent();
+                return true;
+            case R.id.action_button_text:
+                InputDialogFragment dialog = new InputDialogFragment();
+                dialog.show(getSupportFragmentManager(), "InputDialogFragment");
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
