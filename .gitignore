@@ -3,5 +3,6 @@
 /local.properties
 .idea/**/*
 /build
+/notes/tmp/**/*
 /app/build/**/*
 .externalNativeBuild
