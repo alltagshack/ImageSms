@@ -16,6 +16,10 @@ A sms flat rate is a good choice!
   - cam works portrait and landscape mode
   - **sliders to change size and compression**
   - calculte how many bytes/sms it will be
+- share location
+  - there is a location button next to the cam button. It tries for 5s to get GPS location.
+  - sends GEO position in a single sms
+  - a long press on a reveived GEO mime message opens the position in a map application
 - the data sms are **hidden in normal sms/mms apps**
 - vibrate, LED and sound-notification with preview in the notification
 - checks the limit of 256 messages for each image

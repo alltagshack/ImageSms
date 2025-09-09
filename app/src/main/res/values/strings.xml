@@ -6,6 +6,7 @@
     <string name="date_format">yyyy-MM-dd HH:mm</string>
     <string name="last_tel">+49157</string>
     <string name="take_pic">Take picture</string>
+    <string name="get_loc">Get location</string>
     <string name="wait">Please wait</string>
     <string name="send_as_binary">(maybe text file, but I sent it as .bin file)</string>
 </resources>

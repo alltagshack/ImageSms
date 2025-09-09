@@ -1,6 +1,7 @@
 package art.wertfrei.byteSMS;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -11,6 +12,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -19,6 +23,7 @@ import android.os.PowerManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -44,6 +49,7 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import pl.droidsonroids.gif.GifDrawable;
@@ -69,8 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private int messageCount;
     private Bitmap capturedImage;
 
-    private void initViews()
-    {
+    private void initViews() {
         listLayout = findViewById(R.id.listLayout);
         numberLine = findViewById(R.id.numberLine);
         sendImageView = findViewById(R.id.imageView);
@@ -83,8 +88,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initViews();
@@ -107,14 +111,16 @@ public class MainActivity extends AppCompatActivity {
                 if (progress > 100) progress = 100;
                 myApp.setCompression(progress);
                 scaleCapturedImage();
-                showShareBytes();
+                showShareBytes(0.0, 0.0);
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) { }
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) { }
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         });
         sbSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -126,14 +132,16 @@ public class MainActivity extends AppCompatActivity {
                 if (progress < 20) progress = 20;
                 myApp.setImageSize(progress);
                 scaleCapturedImage();
-                showShareBytes();
+                showShareBytes(0.0, 0.0);
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) { }
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) { }
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -153,10 +161,8 @@ public class MainActivity extends AppCompatActivity {
         myApp.cleanupTmpFiles();
     }
 
-    private void handleSendIntent(Intent intent, String type)
-    {
-        if (type.startsWith("image/") || type.startsWith("text/") || type.startsWith("application/"))
-        {
+    private void handleSendIntent(Intent intent, String type) {
+        if (type.startsWith("image/") || type.startsWith("text/") || type.startsWith("application/")) {
             Log.d(getString(R.string.app_name), "mime type: " + type);
 
             Uri fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
@@ -191,12 +197,12 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
 
-                        sbCompression.setProgress(myApp.getCompression()/10);
-                        sbSize.setProgress(myApp.getImageSize()/40);
+                        sbCompression.setProgress(myApp.getCompression() / 10);
+                        sbSize.setProgress(myApp.getImageSize() / 40);
                         scaleCapturedImage();
                     }
 
-                    showShareBytes();
+                    showShareBytes(0.0, 0.0);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -205,13 +211,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void showShareBytes()
-    {
+    private void showShareBytes(double latitude, double longitude) {
         MyApplication myApp = (MyApplication) this.getApplicationContext();
 
         Bitmap compressedBitmap = BitmapFactory.decodeByteArray(shareBytes, 0, shareBytes.length);
         // +1 for mime byte in first sms
-        int countSms = (int) Math.ceil((double) (shareBytes.length +1) / BinarySMS.SEGMENT_SIZE);
+        int countSms = (int) Math.ceil((double) (shareBytes.length + 1) / BinarySMS.SEGMENT_SIZE);
 
         initViews();
 
@@ -250,13 +255,22 @@ public class MainActivity extends AppCompatActivity {
 
             fileDetails.append(getString(R.string.send_as_binary) + "\n");
 
+        } else if (shareMime == MimeCode.GEO) {
+
+            try {
+                fileDetails.append(new String(shareBytes, "UTF-8"));
+                fileDetails.append("\n");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+
         } else {
             sendImageView.setImageBitmap(compressedBitmap);
         }
 
         fileDetails.append(
                 "mime: " + shareMime.toString() + "\n" +
-                "bytes: " +
+                        "bytes: " +
                         String.valueOf(shareBytes.length) +
                         " (" +
                         String.valueOf(countSms) +
@@ -294,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
             progressDialog = new ProgressDialog(MainActivity.this);
             progressDialog.setMessage(getString(R.string.wait));
             // +1 for mime byte in first sms
-            progressDialog.setMax((int) Math.ceil((double) (shareBytes.length +1) / BinarySMS.SEGMENT_SIZE));
+            progressDialog.setMax((int) Math.ceil((double) (shareBytes.length + 1) / BinarySMS.SEGMENT_SIZE));
             progressDialog.setProgress(0);
             progressDialog.setCancelable(false);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -318,8 +332,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Boolean success) {
-            if (success)
-            {
+            if (success) {
                 Toast.makeText(context, getString(R.string.send_done), Toast.LENGTH_SHORT).show();
 
                 sendImageView.setVisibility(View.GONE);
@@ -344,8 +357,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updateInbox()
-    {
+    private void updateInbox() {
         MyApplication myApp = (MyApplication) this.getApplicationContext();
         Cursor cursor = myApp.getMessages();
         messageCount = 0;
@@ -393,8 +405,7 @@ public class MainActivity extends AppCompatActivity {
         ImageView imageView = null;
         if (bitmap != null) {
 
-            if (mime == MimeCode.GIF)
-            {
+            if (mime == MimeCode.GIF) {
                 imageView = new GifImageView(this);
                 ByteArrayInputStream inputStream = new ByteArrayInputStream(fullMessage);
                 try {
@@ -410,14 +421,13 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setImageBitmap(bitmap);
             }
 
-            if (imageView != null)
-            {
+            if (imageView != null) {
                 LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                 );
                 imageView.setLayoutParams(params2);
-                imageView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
+                imageView.setPadding(MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING);
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 imageView.setAdjustViewBounds(true);
                 if (messageCount % 2 == 0) {
@@ -432,7 +442,28 @@ public class MainActivity extends AppCompatActivity {
             if (mime == MimeCode.TXT)
             {
                 textView.append("\"" + previewText(fullMessage, 130) + "\"\n");
+            }
+            else if (mime == MimeCode.GEO)
+            {
+                try {
+                    String text = new String(fullMessage, "UTF-8");
+                    textView.append(text + "\n");
 
+                    textView.setOnLongClickListener(new View.OnLongClickListener() {
+
+                        @Override
+                        public boolean onLongClick(View v) {
+                            TextView tv = (TextView) v;
+                            double[] loc = extractGeo(tv.getText().toString());
+                            if (loc != null) openMapApp(loc[0], loc[1]);
+
+                            return true;
+                        }
+                    });
+
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -442,7 +473,7 @@ public class MainActivity extends AppCompatActivity {
                 "bytes: " +
                         String.valueOf(fullMessage.length) +
                         " (" +
-                        String.valueOf((int) Math.ceil((double) (fullMessage.length +1) / BinarySMS.SEGMENT_SIZE)) +
+                        String.valueOf((int) Math.ceil((double) (fullMessage.length + 1) / BinarySMS.SEGMENT_SIZE)) +
                         " SMS)\n\n");
 
         textView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
@@ -459,7 +490,7 @@ public class MainActivity extends AppCompatActivity {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
         textView.setLayoutParams(params);
-        textView.setPadding(MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING,MESSAGE_PADDING);
+        textView.setPadding(MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING);
         listLayout.addView(textView);
     }
 
@@ -473,26 +504,20 @@ public class MainActivity extends AppCompatActivity {
             if (fullMessage != null) {
                 showMessage(dateStr, mime, address, fullMessage);
             }
-        }
-        else if (intent != null && intent.getAction() != null && intent.getType() != null)
-        {
+        } else if (intent != null && intent.getAction() != null && intent.getType() != null) {
             String action = intent.getAction();
             String type = intent.getType();
 
-            if (Intent.ACTION_SEND.equals(action))
-            {
-                if (PermissionUtils.externalGranted(this))
-                {
+            if (Intent.ACTION_SEND.equals(action)) {
+                if (PermissionUtils.externalGranted(this)) {
                     handleSendIntent(intent, type);
-                }
-                else {
+                } else {
                     String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
                     PermissionUtils.requestPermissions(this, MyApplication.PERMISSION_REQ, permissions);
                 }
             }
         } else {
-            if (PermissionUtils.allGranted(this) == false)
-            {
+            if (PermissionUtils.allGranted(this) == false) {
                 String[] permissions = new String[]{
                         Manifest.permission.RECEIVE_SMS,
                         Manifest.permission.RECEIVE_MMS,
@@ -526,8 +551,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void scaleCapturedImage()
-    {
+    private void scaleCapturedImage() {
         MyApplication myApp = (MyApplication) this.getApplicationContext();
 
         if (capturedImage == null) return;
@@ -565,6 +589,86 @@ public class MainActivity extends AppCompatActivity {
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
+    public double[] extractGeo(String geoString) {
+        String[] lines = geoString.split("\n");
+
+        for (String line : lines) {
+            if (line.startsWith("geo:")) {
+                String coordinates = line.substring(4);
+                String[] parts = coordinates.split(",");
+
+                if (parts.length == 2) {
+                    try {
+                        double latitude = Double.parseDouble(parts[0]);
+                        double longitude = Double.parseDouble(parts[1]);
+                        return new double[]{latitude, longitude};
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private String formatGeo(double latitude, double longitude) {
+        String formattedLatitude = String.format(Locale.US, "%.6f", latitude);
+        String formattedLongitude = String.format(Locale.US, "%.6f", longitude);
+
+        return "geo:" + formattedLatitude + "," + formattedLongitude;
+    }
+
+    private void openMapApp(double latitude, double longitude) {
+        Uri gmmIntentUri = Uri.parse(formatGeo(latitude, longitude));
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        //mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void getLocationUpdates() {
+
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        LocationListener locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+
+                Log.d(getString(R.string.app_name), "Latitude: " + latitude + ", Longitude: " + longitude);
+
+                try {
+                    shareBytes = formatGeo(latitude, longitude).getBytes("UTF-8");
+                    capturedImage = null;
+                    shareMime = MimeCode.GEO;
+                    showShareBytes(latitude, longitude);
+
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+            }
+        };
+
+        if (PermissionUtils.locationGranted(this)) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 10, locationListener);
+        } else {
+            String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+            PermissionUtils.requestPermissions(this, MyApplication.LOCATION_PERMISSION, permissions);
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         boolean granted = false;
@@ -573,8 +677,12 @@ public class MainActivity extends AppCompatActivity {
                 granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
                 if (granted) {
                     Toast.makeText(this, getString(R.string.restart_me), Toast.LENGTH_LONG).show();
-                } else {
-                    //nobody knows what to do
+                }
+                break;
+            case MyApplication.LOCATION_PERMISSION:
+                granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                if (granted) {
+                    getLocationUpdates();
                 }
                 break;
             default:
@@ -611,7 +719,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (shareBytes != null)
         {
-            showShareBytes();
+            showShareBytes(0.0, 0.0);
         }
     }
 
@@ -647,7 +755,7 @@ public class MainActivity extends AppCompatActivity {
             sbSize.setProgress(myApp.getImageSize()/40);
 
             scaleCapturedImage();
-            showShareBytes();
+            showShareBytes(0.0, 0.0);
         }
     }
 
@@ -678,6 +786,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.action_button_location:
+                getLocationUpdates();
+                return true;
             case R.id.action_button:
                 dispatchTakePictureIntent();
                 return true;

@@ -21,6 +21,7 @@ import java.util.Date;
 public class MyApplication extends Application {
 
     public static final int PERMISSION_REQ = 0x0815;
+    public static final int LOCATION_PERMISSION = 0x4711;
     public static final int IMAGE_CAPTURE_REQ = 0x4711;
     public static final int TEMPFILES_MINUTES_LIMIT = 30;
 

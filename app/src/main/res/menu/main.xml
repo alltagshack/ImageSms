@@ -2,6 +2,11 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/action_button_location"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:title="@string/get_loc"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_button"
         android:icon="@android:drawable/ic_menu_camera"
         android:title="@string/take_pic"

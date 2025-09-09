@@ -25,6 +25,11 @@ public final class PermissionUtils {
         return (checkPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE));
     }
 
+    public static boolean locationGranted(Context context) {
+        return (checkPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) &&
+                checkPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION));
+    }
+
     public static boolean allGranted(Context context) {
 
         return (checkPermission(context, Manifest.permission.RECEIVE_SMS) &&
