@@ -8,7 +8,7 @@
 //   wget http://download.geonames.org/export/dump/cities15000.zip
 //   unzip cities15000.zip
 // compile: g++ geonames_to_sqlite.cpp -lsqlite3 -Wall -o geonames_to_sqlite
-// usage:   ./geonames_to_sqlite tmp/cities15000.txt tmp/cities.db
+// usage:   ./geonames_to_sqlite tmp/cities15000.txt ../app/src/main/assets/cities.db
 
 int main(int argc, char *argv[]) {
     std::ifstream infile(argv[1]);
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
     // Tabelle erstellen
     const char* createTableSQL = R"(
-        CREATE TABLE IF NOT EXISTS orte (
+        CREATE TABLE IF NOT EXISTS cities (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             latitude REAL,
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Prepare SQL INSERT Statement
-    const char* insertSQL = "INSERT INTO orte (id, name, latitude, longitude) VALUES (?, ?, ?, ?);";
+    const char* insertSQL = "INSERT INTO cities (id, name, latitude, longitude) VALUES (?, ?, ?, ?);";
     sqlite3_stmt* stmt;
     sqlite3_prepare_v2(db, insertSQL, -1, &stmt, nullptr);
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 
         count++;
         if (count % 1000 == 0) {
-            std::cout << count << " cities addded...\n";
+            std::cout << count << " entries addded...\n";
         }
     }
 

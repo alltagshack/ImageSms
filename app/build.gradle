@@ -6,9 +6,17 @@ android {
         applicationId "art.wertfrei.byteSMS"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 33
-        versionName "3.3"
+        versionCode 34
+        versionName "3.4"
         multiDexEnabled true
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [
+                        "room.schemaLocation": "$projectDir/schemas".toString()
+                ]
+            }
+        }
     }
 
     signingConfigs {
@@ -44,6 +52,8 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:2.0.4'
     implementation 'com.android.support:design:28.+'
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'android.arch.persistence.room:runtime:1.1.1'
+    annotationProcessor 'android.arch.persistence.room:compiler:1.1.1'
 
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.23'
 }

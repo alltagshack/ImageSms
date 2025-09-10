@@ -2,7 +2,12 @@ package art.wertfrei.byteSMS;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.arch.persistence.db.SupportSQLiteOpenHelper;
+import android.arch.persistence.room.DatabaseConfiguration;
+import android.arch.persistence.room.InvalidationTracker;
+import android.arch.persistence.room.Room;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +36,7 @@ import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -50,8 +56,11 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageView;
@@ -76,6 +85,10 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     private int messageCount;
     private Bitmap capturedImage;
 
+    private LocationManager locationManager;
+    private ExecutorService executorService;
+    private List<CityDistance> nextCities;
+
     private void initViews() {
         listLayout = findViewById(R.id.listLayout);
         numberLine = findViewById(R.id.numberLine);
@@ -85,14 +98,17 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         sbCompression = findViewById(R.id.sbCompression);
         sbSize = findViewById(R.id.sbSize);
         sendButton = findViewById(R.id.button);
-
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         initViews();
+
+        executorService = Executors.newSingleThreadExecutor();
+
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -112,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                 if (progress > 100) progress = 100;
                 myApp.setCompression(progress);
                 scaleCapturedImage();
-                showShareBytes(0.0, 0.0);
+                showShareBytes();
             }
 
             @Override
@@ -133,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                 if (progress < 20) progress = 20;
                 myApp.setImageSize(progress);
                 scaleCapturedImage();
-                showShareBytes(0.0, 0.0);
+                showShareBytes();
             }
 
             @Override
@@ -203,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                         scaleCapturedImage();
                     }
 
-                    showShareBytes(0.0, 0.0);
+                    showShareBytes();
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -212,12 +228,15 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         }
     }
 
-    private void showShareBytes(double latitude, double longitude) {
+    private int countSms(byte[] bytes)
+    {
+        return (int) Math.ceil((double) (bytes.length + 1) / BinarySMS.SEGMENT_SIZE);
+    }
+
+    private void showShareBytes() {
         MyApplication myApp = (MyApplication) this.getApplicationContext();
 
         Bitmap compressedBitmap = BitmapFactory.decodeByteArray(shareBytes, 0, shareBytes.length);
-        // +1 for mime byte in first sms
-        int countSms = (int) Math.ceil((double) (shareBytes.length + 1) / BinarySMS.SEGMENT_SIZE);
 
         initViews();
 
@@ -232,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             sbCompression.setVisibility(View.VISIBLE);
         }
 
-        if (countSms > 255) {
+        if (countSms(shareBytes) > 255) {
             sendButton.setEnabled(false);
         } else {
             sendButton.setEnabled(true);
@@ -259,8 +278,21 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         } else if (shareMime == MimeCode.GEO) {
 
             try {
-                fileDetails.append(new String(shareBytes, "UTF-8"));
-                fileDetails.append("\n");
+                String geoTag = new String(shareBytes, "UTF-8");
+                fileDetails.append(geoTag + "\n");
+
+                if (nextCities != null) {
+                    for (CityDistance nextCity : nextCities)
+                    {
+                        fileDetails.append(nextCity + "\n");
+                    }
+                    MapView mv = new MapView(this);
+                    double[] p = extractGeo(geoTag);
+                    mv.setLocations(p[0], p[1], nextCities);
+                    sendImageView.setImageBitmap(mv.getBitmap());
+                    sendImageView.setVisibility(View.VISIBLE);
+                }
+
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -269,13 +301,34 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             sendImageView.setImageBitmap(compressedBitmap);
         }
 
+        File appFolder = myApp.getAppFolder();
+        String path = appFolder.getPath() + "/" + telEdit.getText().toString().replace("+", "00") + ".pub";
+        byte[] encrypted = null;
+        try {
+            File file = new File(path);
+            if (file.exists()) {
+                encrypted = RSAEncryption.encrypt(shareBytes, file);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         fileDetails.append(
-                "mime: " + shareMime.toString() + "\n" +
-                        "bytes: " +
-                        String.valueOf(shareBytes.length) +
-                        " (" +
-                        String.valueOf(countSms) +
-                        " SMS)");
+            "mime: " + shareMime.toString() + "\n" +
+            "bytes: " +
+            String.valueOf(shareBytes.length) +
+            " (" +
+            String.valueOf(countSms(shareBytes)) +
+            " SMS)");
+        if (encrypted != null) {
+            fileDetails.append(
+                "\nencrypted: " +
+                String.valueOf(encrypted.length) +
+                " (" +
+                String.valueOf(countSms(encrypted)) +
+                " SMS)" );
+
+        }
     }
 
     public static String previewText(byte[] bytes, int maxChars) {
@@ -300,7 +353,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         shareMime = MimeCode.TXT;
         capturedImage = null;
         shareBytes = input.getBytes();
-        showShareBytes(0.0, 0.0);
+        showShareBytes();
     }
 
     private class MyAsyncSend extends AsyncTask<Void, Integer, Boolean> {
@@ -317,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             progressDialog = new ProgressDialog(MainActivity.this);
             progressDialog.setMessage(getString(R.string.wait));
             // +1 for mime byte in first sms
-            progressDialog.setMax((int) Math.ceil((double) (shareBytes.length + 1) / BinarySMS.SEGMENT_SIZE));
+            progressDialog.setMax(countSms(shareBytes));
             progressDialog.setProgress(0);
             progressDialog.setCancelable(false);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -429,23 +482,6 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                 imageView.setImageBitmap(bitmap);
             }
 
-            if (imageView != null) {
-                LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-                imageView.setLayoutParams(params2);
-                imageView.setPadding(MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING);
-                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                imageView.setAdjustViewBounds(true);
-                if (messageCount % 2 == 0) {
-                    imageView.setBackgroundResource(R.color.halfLine1);
-                } else {
-                    imageView.setBackgroundResource(R.color.halfLine2);
-                }
-                listLayout.addView(imageView);
-            }
-
         } else {
             if (mime == MimeCode.TXT)
             {
@@ -463,11 +499,37 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                         public boolean onLongClick(View v) {
                             TextView tv = (TextView) v;
                             double[] loc = extractGeo(tv.getText().toString());
+
                             if (loc != null) openMapApp(loc[0], loc[1]);
 
                             return true;
                         }
                     });
+                    textView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            TextView tv = (TextView) v;
+                            final double[] loc = extractGeo(tv.getText().toString());
+
+                            executorService.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    MyApplication myApp = (MyApplication) getApplicationContext();
+                                    nextCities = myApp.nextCities(loc[0], loc[1]);
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            MapView mv = new MapView(MainActivity.this);
+                                            mv.setLocations(loc[0], loc[1], nextCities);
+                                            mv.showMapViewDialog(MainActivity.this);
+                                        }
+                                    });
+
+                                }
+                            });
+                        }
+                    });
+
 
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
@@ -475,14 +537,30 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             }
         }
 
-        textView.append("mime: " + mime.toString() + "\n");
+        if (imageView != null) {
+            LinearLayout.LayoutParams params2 = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            imageView.setLayoutParams(params2);
+            imageView.setPadding(MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING, MESSAGE_PADDING);
+            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            imageView.setAdjustViewBounds(true);
+            if (messageCount % 2 == 0) {
+                imageView.setBackgroundResource(R.color.halfLine1);
+            } else {
+                imageView.setBackgroundResource(R.color.halfLine2);
+            }
+            listLayout.addView(imageView);
+        }
+
         textView.append(
-                // +1 for mime byte in first sms
-                "bytes: " +
-                        String.valueOf(fullMessage.length) +
-                        " (" +
-                        String.valueOf((int) Math.ceil((double) (fullMessage.length + 1) / BinarySMS.SEGMENT_SIZE)) +
-                        " SMS)\n\n");
+            "mime: " + mime.toString() + "\n" +
+            "bytes: " +
+            String.valueOf(fullMessage.length) +
+            " (" +
+            String.valueOf(countSms(fullMessage)) +
+            " SMS)\n\n");
         textView.setTypeface(Typeface.MONOSPACE);
         textView.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
         textView.setGravity(Gravity.TOP);
@@ -629,27 +707,41 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     private void openMapApp(double latitude, double longitude) {
         Uri gmmIntentUri = Uri.parse(formatGeo(latitude, longitude));
         Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
-        //mapIntent.setPackage("com.google.android.apps.maps");
         startActivity(mapIntent);
     }
 
     @SuppressLint("MissingPermission")
     private void getLocationUpdates() {
 
-        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         LocationListener locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
+                final double latitude = location.getLatitude();
+                final double longitude = location.getLongitude();
 
                 Log.d(getString(R.string.app_name), "Latitude: " + latitude + ", Longitude: " + longitude);
+
+                locationManager.removeUpdates(this);
 
                 try {
                     shareBytes = formatGeo(latitude, longitude).getBytes("UTF-8");
                     capturedImage = null;
                     shareMime = MimeCode.GEO;
-                    showShareBytes(latitude, longitude);
+                    executorService.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            MyApplication myApp = (MyApplication) getApplicationContext();
+                            nextCities = myApp.nextCities(latitude, longitude);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    showShareBytes();
+                                }
+                            });
+
+                        }
+                    });
 
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
@@ -727,7 +819,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         }
         if (shareBytes != null)
         {
-            showShareBytes(0.0, 0.0);
+            showShareBytes();
         }
     }
 
@@ -763,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             sbSize.setProgress(myApp.getImageSize()/40);
 
             scaleCapturedImage();
-            showShareBytes(0.0, 0.0);
+            showShareBytes();
         }
     }
 
@@ -795,6 +887,8 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_button_location:
+                nextCities = null;
+                Toast.makeText(MainActivity.this, getString(R.string.location_wait), Toast.LENGTH_SHORT).show();
                 getLocationUpdates();
                 return true;
             case R.id.action_button:

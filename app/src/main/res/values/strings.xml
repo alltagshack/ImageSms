@@ -12,4 +12,5 @@
     <string name="ok">ok</string>
     <string name="cancel">cancel</string>
     <string name="utf8_text">Send Text</string>
+    <string name="location_wait">GPS search. Wait a bit...</string>
 </resources>

@@ -14,9 +14,12 @@ A sms flat rate is a good choice!
   - **sliders to change size and compression**
   - calculte how many bytes/sms it will be
 - share **location**
-  - there is a location button next to the cam button. It tries for 5s to get GPS location.
+  - there is a location button next to the cam button. It tries to get a single GPS location.
   - sends GEO position in a single sms
-  - a long press on a reveived GEO mime message opens the position in a map application
+  - **primitive offline preview of the very next 3 cities**
+  - received GEO message:
+    - long press: opens location in your map application
+    - short click: primitive offline preview with 3 city names next to the location
 - share an **UTF-8 text**
 - uses "share to" for file access
   - handles **txt**, png, webp, gif and jpeg (unknown are send/stored as .bin files)
@@ -43,6 +46,8 @@ For example
 
 ![get animated gif](images/07-received-gif-files-are-animated.gif)
 
+![share location](images/08-share-location.jpg)
+
 or see folder `images/`.
 
 ## Issues
@@ -57,6 +62,20 @@ or see folder `images/`.
 - Because the default datasms api from Android is stupid, I have to
   make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
 - not tested on Android 4.4
+
+
+## todo
+
+- if sender makes `ssh-keygen -t rsa -b 2048 -m PEM -f 00YOURPHONEADDRESS`
+  - copy 00YOURPHONEADDRESS to a `Documents/art.wertfrei.bytesms/my.pem` file
+  - copy 00YOURPHONEADDRESS.pub to the `Documents/art.wertfrei.bytesms/` folder of the receiving phone
+- make mime-type version for encrypted data
+- talk with people about passwordless private key on your phone?! Check security issues and find solutions!
+  - Maybe ask for password to see the message(?)
+  - react on a changed phone address number in the textfield
+- make encryption-send-button
+- handle received encrypted data
+- QR-Code to share pub key?
 
 ## Permissions
 

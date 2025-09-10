@@ -1,6 +1,7 @@
 package art.wertfrei.byteSMS;
 
 import android.app.Application;
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -8,14 +9,17 @@ import android.net.Uri;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
+import java.util.List;
 
 
 public class MyApplication extends Application {
@@ -25,6 +29,9 @@ public class MyApplication extends Application {
     public static final int IMAGE_CAPTURE_REQ = 0x4711;
     public static final int TEMPFILES_MINUTES_LIMIT = 30;
 
+    private static final int NEXTCITIES_LIMIT = 3;
+    public static final String CITY_DATABASE_NAME = "cities.db";
+
     private DatabaseManager dbManager;
 
     @Override
@@ -33,6 +40,13 @@ public class MyApplication extends Application {
         if (dbManager == null) {
             dbManager = new DatabaseManager(this);
         }
+
+        try {
+            copyDatabase(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         if (!pref.contains("REF_ID")) {
             pref.edit().putInt("REF_ID", 0).commit();
@@ -69,6 +83,38 @@ public class MyApplication extends Application {
             cursor.close();
         }
         return m;
+    }
+
+    private void copyDatabase(Context context) throws IOException {
+        File dbFile = new File(context.getDatabasePath(CITY_DATABASE_NAME).getAbsolutePath());
+
+        Log.d("bytesms", "Database path: " + dbFile.getAbsolutePath());
+
+        if (!dbFile.exists()) {
+
+            File parentDir = dbFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            try (InputStream inputStream = context.getAssets().open(CITY_DATABASE_NAME);
+                 OutputStream outputStream = new FileOutputStream(dbFile)) {
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+            }
+        }
+    }
+
+    public List<CityDistance> nextCities(double lat, double lon)
+    {
+        AppDatabase dbCities = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, CITY_DATABASE_NAME)
+                .fallbackToDestructiveMigration()
+                .build();
+        CitiesRepository repository = new CitiesRepository(dbCities.cityDao());
+        return repository.nextCities(lat, lon, NEXTCITIES_LIMIT);
     }
 
     public Cursor getMessages() {
