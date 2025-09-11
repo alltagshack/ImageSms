@@ -1,10 +1,14 @@
-# ByteSMS
+# ImageSMS 3 - proof of concept
 
-ByteSMS uses data SMS to send a very small picture (NOT MMS). It uses
-It is a *proof of concept* App and Open Source on github. If you
-want to enlarge the features, you have to do it by your own.
+ImageSMS 3 (or ByteSMS) uses data SMS to send a very small picture (NOT MMS).
+It is a *proof of concept* App and Open Source on github. Sending text,
+location or files and using openssl-keys for encrypt + decrypt are options, too.
 
-A sms flat rate is a good choice!
+- Android 4.4: not tested
+- Android 6: some message parts got lost because of os double broadcasts
+- Android 10, 14: well tested and works acceptable
+
+It has an focus on offline-usage! A sms flat rate is a good choice!
 
 ## Features
 
@@ -61,20 +65,16 @@ or see folder `images/`.
 - The hint "20 SMS in 30min per App limit" my break the sending. I am struggling to handle this limit or change it.
 - Because the default datasms api from Android is stupid, I have to
   make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
-- not tested on Android 4.4
-
 
 ## todo
 
-- if sender makes `ssh-keygen -t rsa -b 2048 -m PEM -f 00YOURPHONEADDRESS`
-  - copy 00YOURPHONEADDRESS to a `Documents/art.wertfrei.bytesms/my.pem` file
-  - copy 00YOURPHONEADDRESS.pub to the `Documents/art.wertfrei.bytesms/` folder of the receiving phone
-- make mime-type version for encrypted data
+- sender makes `openssl genpkey -algorithm RSA -out my.pem -pkeyopt rsa_keygen_bits:2048`
+- sender makes `openssl rsa -pubout -in my.pem -out 00YOURPHONEADDRESS.pub`
+  - copy my.pem to your `Documents/art.wertfrei.bytesms/` folder receiving phone
+  - copy 00YOURPHONEADDRESS.pub to the `Documents/art.wertfrei.bytesms/` folder of the sender phone
 - talk with people about passwordless private key on your phone?! Check security issues and find solutions!
   - Maybe ask for password to see the message(?)
   - react on a changed phone address number in the textfield
-- make encryption-send-button
-- handle received encrypted data
 - QR-Code to share pub key?
 
 ## Permissions

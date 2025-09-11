@@ -1,15 +1,22 @@
 package art.wertfrei.byteSMS;
 
 public enum MimeCode {
-    BIN((byte) 0),
-    JPG((byte) 1),
-    GIF((byte) 2),
-    PNG((byte) 3),
-    WEBP((byte) 4),
-    TXT((byte) 5),
-    GEO((byte) 6);
+    BIN((byte) 0x00),
+    JPG((byte) 0x01),
+    GIF((byte) 0x02),
+    PNG((byte) 0x03),
+    WEBP((byte) 0x04),
+    TXT((byte) 0x05),
+    GEO((byte) 0x06),
+    eBIN((byte) 0x10),
+    eJPG((byte) 0x11),
+    eGIF((byte) 0x12),
+    ePNG((byte) 0x13),
+    eWEBP((byte)0x14),
+    eTXT((byte) 0x15),
+    eGEO((byte) 0x16);
 
-    private final byte code;
+    private byte code;
 
     MimeCode(byte code) {
         this.code = code;
@@ -17,6 +24,20 @@ public enum MimeCode {
 
     public byte getCode() {
         return code;
+    }
+
+    public boolean isEncrypt() {
+        return (code & 0x10) != 0;
+    }
+
+    public MimeCode getEncrypt() {
+        byte c = (byte) (code | 0x10);
+        return fromByte(c);
+    }
+
+    public MimeCode getDecrypt() {
+        byte c = (byte) (code & ~0x10);
+        return fromByte(c);
     }
 
     public static MimeCode fromByte(byte code) {

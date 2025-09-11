@@ -78,9 +78,11 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     private SeekBar sbCompression;
     private SeekBar sbSize;
     private Button sendButton;
+    private Button eSendButton;
 
     private byte[] shareBytes;
     private MimeCode shareMime;
+    private boolean shareEncrypt;
 
     private int messageCount;
     private Bitmap capturedImage;
@@ -98,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         sbCompression = findViewById(R.id.sbCompression);
         sbSize = findViewById(R.id.sbSize);
         sendButton = findViewById(R.id.button);
+        eSendButton = findViewById(R.id.ebutton);
     }
 
     @Override
@@ -107,12 +110,22 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
 
         initViews();
 
+        final MyApplication myApp = (MyApplication) this.getApplicationContext();
+
         executorService = Executors.newSingleThreadExecutor();
 
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 new MyAsyncSend(MainActivity.this).execute();
+            }
+        });
+        eSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                shareEncrypt = shareEncrypt? false : true;
+                myApp.setTel(telEdit.getText().toString());
+                showShareBytes();
             }
         });
         handleIntent(getIntent());
@@ -122,7 +135,6 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser == false) return;
 
-                MyApplication myApp = (MyApplication) getApplicationContext();
                 progress *= 10;
                 if (progress < 5) progress = 5;
                 if (progress > 100) progress = 100;
@@ -144,7 +156,6 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser == false) return;
 
-                MyApplication myApp = (MyApplication) getApplicationContext();
                 progress *= 40;
                 if (progress < 20) progress = 20;
                 myApp.setImageSize(progress);
@@ -174,7 +185,6 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
 
         updateInbox();
 
-        MyApplication myApp = (MyApplication) this.getApplicationContext();
         myApp.cleanupTmpFiles();
     }
 
@@ -191,6 +201,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                     String mimeType = contentResolver.getType(fileUri);
                     int fileSize = inputStream.available();
                     shareBytes = new byte[fileSize];
+                    shareEncrypt = false;
 
                     shareMime = MimeCode.fromString(mimeType);
                     if (shareMime == MimeCode.BIN) {
@@ -243,18 +254,14 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         sendImageView.setVisibility(View.VISIBLE);
         fileDetails.setVisibility(View.VISIBLE);
         numberLine.setVisibility(View.VISIBLE);
+        telEdit.setVisibility(View.VISIBLE);
+
         telEdit.setText(myApp.getTel());
         fileDetails.setText("");
 
         if (capturedImage != null) {
             sbSize.setVisibility(View.VISIBLE);
             sbCompression.setVisibility(View.VISIBLE);
-        }
-
-        if (countSms(shareBytes) > 255) {
-            sendButton.setEnabled(false);
-        } else {
-            sendButton.setEnabled(true);
         }
 
         if (shareMime == MimeCode.GIF) {
@@ -298,19 +305,32 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             }
 
         } else {
-            sendImageView.setImageBitmap(compressedBitmap);
+            if (compressedBitmap != null) {
+                sendImageView.setImageBitmap(compressedBitmap);
+            }
         }
 
-        File appFolder = myApp.getAppFolder();
-        String path = appFolder.getPath() + "/" + telEdit.getText().toString().replace("+", "00") + ".pub";
-        byte[] encrypted = null;
-        try {
-            File file = new File(path);
-            if (file.exists()) {
-                encrypted = RSAEncryption.encrypt(shareBytes, file);
+        if (shareEncrypt) {
+            File appFolder = myApp.getAppFolder();
+            String path = appFolder.getPath() + "/" + telEdit.getText().toString().replace("+", "00") + ".pub";
+            try {
+                File file = new File(path);
+                if (file.exists()) {
+                    shareBytes = RSAEncryption.encrypt(shareBytes, file);
+                    shareMime = shareMime.getEncrypt();
+
+                    // if the shareBytes are encrypted, these parts are hidden
+                    sendImageView.setVisibility(View.GONE);
+                    sbSize.setVisibility(View.GONE);
+                    sbCompression.setVisibility(View.GONE);
+                    telEdit.setVisibility(View.GONE);
+                    eSendButton.setEnabled(false);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } else {
+            eSendButton.setEnabled(true);
         }
 
         fileDetails.append(
@@ -320,14 +340,11 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             " (" +
             String.valueOf(countSms(shareBytes)) +
             " SMS)");
-        if (encrypted != null) {
-            fileDetails.append(
-                "\nencrypted: " +
-                String.valueOf(encrypted.length) +
-                " (" +
-                String.valueOf(countSms(encrypted)) +
-                " SMS)" );
 
+        if (countSms(shareBytes) > 255) {
+            sendButton.setEnabled(false);
+        } else {
+            sendButton.setEnabled(true);
         }
     }
 
@@ -352,6 +369,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     public void onInputDialogResult(String input) {
         shareMime = MimeCode.TXT;
         capturedImage = null;
+        shareEncrypt = false;
         shareBytes = input.getBytes();
         showShareBytes();
     }
@@ -399,6 +417,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
 
                 sendImageView.setVisibility(View.GONE);
                 fileDetails.setVisibility(View.GONE);
+                telEdit.setVisibility(View.GONE);
                 numberLine.setVisibility(View.GONE);
                 sbSize.setVisibility(View.GONE);
                 sbCompression.setVisibility(View.GONE);
@@ -462,6 +481,23 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
         TextView textView = new TextView(this);
         textView.setText(dateStr + "\n");
         textView.append(address + "\n");
+
+        if (mime.isEncrypt())
+        {
+            MyApplication myApp = (MyApplication) this.getApplicationContext();
+
+            File appFolder = myApp.getAppFolder();
+            String path = appFolder.getPath() + "/my.pem";
+            try {
+                File file = new File(path);
+                if (file.exists()) {
+                    fullMessage = RSAEncryption.decrypt(fullMessage, file);
+                    mime = mime.getDecrypt();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         Bitmap bitmap = BitmapFactory.decodeByteArray(fullMessage, 0, fullMessage.length);
         ImageView imageView = null;
@@ -727,6 +763,7 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
                 try {
                     shareBytes = formatGeo(latitude, longitude).getBytes("UTF-8");
                     capturedImage = null;
+                    shareEncrypt = false;
                     shareMime = MimeCode.GEO;
                     executorService.execute(new Runnable() {
                         @Override
@@ -793,12 +830,15 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
         if (sendImageView != null && sendImageView.isShown()) {
             outState.putByteArray("shareBytes", shareBytes);
         }
         if (shareMime != null) {
             outState.putByte("shareMime", shareMime.getCode());
         }
+        outState.putBoolean("shareEncrypt", shareEncrypt);
+
         if (capturedImage != null) {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             capturedImage.compress(Bitmap.CompressFormat.JPEG, 100, stream);
@@ -809,6 +849,8 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+
+        shareEncrypt = savedInstanceState.getBoolean("shareEncrypt");
         shareBytes = savedInstanceState.getByteArray("shareBytes");
         shareMime = MimeCode.fromByte(savedInstanceState.getByte("shareMime"));
         byte[] byteArray = savedInstanceState.getByteArray("capturedBytes");

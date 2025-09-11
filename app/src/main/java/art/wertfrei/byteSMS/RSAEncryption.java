@@ -12,10 +12,8 @@ import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.RSAPublicKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 
@@ -33,10 +31,10 @@ public class RSAEncryption {
 
     private static PublicKey loadOpenSSHPublicKey(File pubKeyFile) throws Exception {
         byte[] keyBytes = readFileToByteArray(pubKeyFile);
-        String keyString = new String(keyBytes).trim();
-        if (keyString.startsWith("ssh-rsa")) {
-            keyString = keyString.split(" ")[1];
-        }
+        String keyString = new String(keyBytes)
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s+", "");
 
         byte[] decoded = Base64.decode(keyString, Base64.DEFAULT);
         DataInputStream dis = new DataInputStream(new ByteArrayInputStream(decoded));
@@ -88,8 +86,8 @@ public class RSAEncryption {
     public static byte[] decrypt(byte[] encrypted, File myPem) throws Exception {
         byte[] keyBytes = readFileToByteArray(myPem);
         String privateKeyPEM = new String(keyBytes)
-                .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-                .replace("-----END RSA PRIVATE KEY-----", "")
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s+", "");
 
         byte[] decoded = Base64.decode(privateKeyPEM, Base64.DEFAULT);
@@ -100,15 +98,6 @@ public class RSAEncryption {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, priv);
 
-        int blockSize = ((RSAPrivateKey) priv).getModulus().bitLength() / 8;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        for (int i = 0; i < encrypted.length; i += blockSize) {
-            int len = Math.min(blockSize, encrypted.length - i);
-            byte[] chunk = Arrays.copyOfRange(encrypted, i, i + len);
-            out.write(cipher.doFinal(chunk));
-        }
-
-        return out.toByteArray();
+        return cipher.doFinal(encrypted);
     }
 }

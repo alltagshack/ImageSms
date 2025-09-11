@@ -70,7 +70,7 @@
                         android:id="@+id/telEdit"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:ems="10"
+                        android:ems="8"
                         android:hint="@android:string/emptyPhoneNumber"
                         android:inputType="phone"
                         android:text=""
@@ -79,11 +79,17 @@
                         tools:layout_editor_absoluteY="16dp" />
 
                     <Button
+                        android:id="@+id/ebutton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/encrypt"
+                        tools:layout_editor_absoluteY="16dp" />
+
+                    <Button
                         android:id="@+id/button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Send"
-                        tools:layout_editor_absoluteX="278dp"
+                        android:text="@string/send"
                         tools:layout_editor_absoluteY="16dp" />
 
                 </LinearLayout>

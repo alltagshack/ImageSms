@@ -13,4 +13,6 @@
     <string name="cancel">cancel</string>
     <string name="utf8_text">Send Text</string>
     <string name="location_wait">GPS search. Wait a bit...</string>
+    <string name="send">send</string>
+    <string name="encrypt">encrypt</string>
 </resources>
