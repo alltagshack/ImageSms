@@ -6,7 +6,7 @@ location or files and using openssl-keys for encrypt + decrypt are options, too.
 
 - Android 4.4: not tested
 - Android 6: some message parts got lost because of os double broadcasts
-- Android 10, 14: well tested and works acceptable
+- Android 10, 14: well tested and works pre-acceptable
 
 It has an focus on offline-usage! A sms flat rate is a good choice!
 
@@ -66,16 +66,21 @@ or see folder `images/`.
 - Because the default datasms api from Android is stupid, I have to
   make my own small header to each datasms. the theoretical size of 140 is shrinked down to 130!
 
+## encrypt/decrypt ideas and issues
+
+- If app found a `PHONEADDRESS.pub` which matches to the "sent to address", encryption is possible
+- Format is e.g. for germany, cologne 0049221xxxxxx.pub
+- make `openssl genpkey -algorithm RSA -out my.pem -pkeyopt rsa_keygen_bits:2048` for your private key
+  - you can use 4096 instead of 2048, but in that case a bit more SMS will be sent
+  - ugly: passwordless!
+- make `ssh-keygen -y -f my.pem > 00YOURPHONEADDRESS.pub` and share this public key
+  - copy my.pem to `Documents/art.wertfrei.bytesms/` folder (receiving phone = your phone)
+  - copy 00YOURPHONEADDRESS.pub to the `Documents/art.wertfrei.bytesms/` folder of the sender phone
+
 ## todo
 
-- sender makes `openssl genpkey -algorithm RSA -out my.pem -pkeyopt rsa_keygen_bits:2048`
-- sender makes `openssl rsa -pubout -in my.pem -out 00YOURPHONEADDRESS.pub`
-  - copy my.pem to your `Documents/art.wertfrei.bytesms/` folder receiving phone
-  - copy 00YOURPHONEADDRESS.pub to the `Documents/art.wertfrei.bytesms/` folder of the sender phone
-- talk with people about passwordless private key on your phone?! Check security issues and find solutions!
-  - Maybe ask for password to see the message(?)
-  - react on a changed phone address number in the textfield
 - QR-Code to share pub key?
+- back to base64 text sms and not the data sms. No missing data parts anymore :-)
 
 ## Permissions
 

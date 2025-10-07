@@ -17,8 +17,6 @@ import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 
-import android.util.Base64;
-
 public class RSAEncryption {
 
     private static byte[] readFileToByteArray(File file) throws IOException {
@@ -31,33 +29,39 @@ public class RSAEncryption {
 
     private static PublicKey loadOpenSSHPublicKey(File pubKeyFile) throws Exception {
         byte[] keyBytes = readFileToByteArray(pubKeyFile);
-        String keyString = new String(keyBytes)
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s+", "");
+        String keyString = new String(keyBytes);
 
-        byte[] decoded = Base64.decode(keyString, Base64.DEFAULT);
-        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(decoded));
+        String[] parts = keyString.split(" ");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Invalid OpenSSH public key format");
+        }
 
-        byte[] type = new byte[dis.readInt()];
-        dis.readFully(type);
-        String typeStr = new String(type);
-        if (!"ssh-rsa".equals(typeStr)) {
+        String keyType = parts[0]; // "ssh-rsa"
+        byte[] decoded = SimpleBase64.decode(parts[1]);
+
+        if (!"ssh-rsa".equals(keyType)) {
             throw new IllegalArgumentException("Not an RSA public key");
         }
 
-        // exponent e
-        byte[] expBytes = new byte[dis.readInt()];
-        dis.readFully(expBytes);
-        BigInteger e = new BigInteger(1, expBytes);
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(decoded));
 
-        // modulus n
-        byte[] modBytes = new byte[dis.readInt()];
-        dis.readFully(modBytes);
-        BigInteger n = new BigInteger(1, modBytes);
+        int len = dis.readInt();
+        byte[] typeBytes = new byte[len];
+        dis.readFully(typeBytes);
+
+        int eLength = dis.readInt();
+        byte[] eBytes = new byte[eLength];
+        dis.readFully(eBytes);
+        BigInteger e = new BigInteger(1, eBytes);
+
+        int nLength = dis.readInt();
+        byte[] nBytes = new byte[nLength];
+        dis.readFully(nBytes);
+        BigInteger n = new BigInteger(1, nBytes);
 
         RSAPublicKeySpec spec = new RSAPublicKeySpec(n, e);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
         return keyFactory.generatePublic(spec);
     }
 
@@ -90,7 +94,7 @@ public class RSAEncryption {
                 .replace("-----END PRIVATE KEY-----", "")
                 .replaceAll("\\s+", "");
 
-        byte[] decoded = Base64.decode(privateKeyPEM, Base64.DEFAULT);
+        byte[] decoded = SimpleBase64.decode(privateKeyPEM);
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         PrivateKey priv = keyFactory.generatePrivate(spec);
