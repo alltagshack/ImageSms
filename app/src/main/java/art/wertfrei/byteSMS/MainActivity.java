@@ -387,7 +387,6 @@ public class MainActivity extends AppCompatActivity implements InputDialogFragme
             super.onPreExecute();
             progressDialog = new ProgressDialog(MainActivity.this);
             progressDialog.setMessage(getString(R.string.wait));
-            // +1 for mime byte in first sms
             progressDialog.setMax(countSms(shareBytes));
             progressDialog.setProgress(0);
             progressDialog.setCancelable(false);
