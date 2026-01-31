@@ -1,9 +1,18 @@
-# Image SMS
+# Image SMS v2
 
 Image SMS uses long text SMS to send a very small picture (NOT MMS). It uses
 base64 technique (similar to email attachments) to transfer data. It is
 a bare metal App and Open Source on github. If you
 want to enlarge the features, you have to do it by your own.
+
+## Features
+
+- send additional text
+- change compression rate
+- send as gif or webm
+- Supports Android-Share for images (will compress. animated giffs still not working)
+
+![Screenshot](screenshot.png)
 
 ## Permissions
 
@@ -12,17 +21,17 @@ I love my privacy. Thus I love apps with only a couple of permissions. Image SMS
 - SMS (read and send)
 - Camera
 
-Image SMS does not use access to:
+Image SMS does *not* use access to:
 
 - Files
 - Contacts
 - Internet
 
-This may be strange to you, because you need a phone number and there is no contact selection.
+**This may be strange to you**, because you need a phone number and there is no contact selection.
 
 ## Get the App
 
-[APK file](https://raw.githubusercontent.com/no-go/ImageSms/master/app/release/click.dummer.imagesms.apk)
+[APK file](https://github.com/alltagshack/ImageSms/releases/tag/v2.0)
 
 ## NOT todo: CBC ciphertext stealing
 
